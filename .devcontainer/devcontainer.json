@@ -14,6 +14,7 @@
 	
 	// Add the IDs of extensions you want installed when the container is created.
 	"extensions": [
+		"ms-vscode.cpptools-extension-pack",
 		"nvidia.nsight-vscode-edition",
 		"ms-azuretools.vscode-docker",
 		"eamodio.gitlens",

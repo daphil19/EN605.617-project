@@ -44,7 +44,9 @@ RUN eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" \
   && brew install \
     tmux \
     vim \
-    fftw
+    fftw \
+    cmake \
+    pkg-config
 
 
 # # install helpful or neccessary packages (some of these may be replaced by homebrew once that's going)
