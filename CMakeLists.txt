@@ -12,11 +12,7 @@ pkg_search_module(FFTW REQUIRED fftw3 IMPORTED_TARGET)
 include_directories(PkgConfig::FFTW)
 link_libraries     (PkgConfig::FFTW)
 
+# globally enable separable compilation
+set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
 
 add_executable(en605.617-project fftw_driver.c)
-
-set_target_properties(
-    en605.617-project
-    PROPERTIES
-    CUDA_SEPARABLE_COMPILATION ON)
-
