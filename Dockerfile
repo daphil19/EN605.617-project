@@ -21,6 +21,7 @@ RUN apt update \
     curl \
     git
 
+
 # RUN useradd -m -s /bin/bash linuxbrew && \
 #   echo 'linuxbrew ALL=(ALL) NOPASSWD:ALL' >>/etc/sudoers
 
@@ -44,18 +45,9 @@ RUN eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" \
   && brew install \
     tmux \
     vim \
-    fftw \
     cmake \
-    pkg-config
-
-
-# # install helpful or neccessary packages (some of these may be replaced by homebrew once that's going)
-# RUN apt update \
-#     && apt install -y \
-#         git \
-#         tmux \
-#         vim
-
+    gcc \
+    ccache
 
 # This breaks when using podman non-root (i think because it uses the host's UID/GID?) but I think is needed for windows?
 # Comment out on podman!
