@@ -4,7 +4,7 @@ include(ExternalProject)
 ExternalProject_Add(
     fftw
     URL http://fftw.org/fftw-3.3.10.tar.gz
-    CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR> --enable-shared --enable-threads 
+    CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR> --enable-shared --enable-threads --enable-sse2 --enable-avx --enable-avx2
 )
 
 add_library(fftw_benchmark fftw_driver.c)
