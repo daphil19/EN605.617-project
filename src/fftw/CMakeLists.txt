@@ -7,7 +7,7 @@ ExternalProject_Add(
     CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR> --enable-shared --enable-threads --enable-sse2 --enable-avx --enable-avx2
 )
 
-add_library(fftw_benchmark fftw_driver.c)
+add_library(fftw_benchmark fftw_driver.cpp)
 
 # manually identify the fftw installation
 ExternalProject_Get_Property(fftw INSTALL_DIR)

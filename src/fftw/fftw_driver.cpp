@@ -9,14 +9,14 @@ void perfrom_fft()
     size_t N = 8192;
 
     // using fftw_malloc is the reccomended approach for allocating data
-    in = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * N);
-    out = (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * N);
+    in = new fftw_complex[N];
+    out = new fftw_complex[N];
 
     // TODO explain!
     p = fftw_plan_dft_1d(N, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
 
     fftw_destroy_plan(p);
 
-    fftw_free(in);
-    fftw_free(out);
+    delete[] in;
+    delete[] out;
 }
