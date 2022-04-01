@@ -1,8 +1,6 @@
 #include <fftw3.h>
 
-#include <AudioFile.h>
-
-int main()
+void perfrom_fft()
 {
     // these are double-precision; see https://www.fftw.org/fftw3_doc/Complex-numbers.html
     fftw_complex *in, *out;
@@ -21,6 +19,4 @@ int main()
 
     fftw_free(in);
     fftw_free(out);
-
-    return 0;
 }
