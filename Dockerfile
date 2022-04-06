@@ -41,12 +41,13 @@ WORKDIR /home/vsocde
 RUN NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" \
   && echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> /home/vscode/.profile
 
+# using gcc 10 because it looks like there is a regression with respect to some smart pointer stuff in gcc 11 currently
 RUN eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" \
   && brew install \
     tmux \
     vim \
     cmake \
-    gcc \
+    gcc@10 \
     ccache
 
 # This breaks when using podman non-root (i think because it uses the host's UID/GID?) but I think is needed for windows?
