@@ -1,12 +1,12 @@
-# include(FetchContent)
+include(FetchContent)
 
-# FetchContent_Declare(
-#     gnuradio
-#     GIT_REPOSITORY https://github.com/gnuradio/gnuradio.git
-#     GIT_TAG v3.10.1.1
-# )
+FetchContent_Declare(
+    audiofile
+    GIT_REPOSITORY https://github.com/adamstark/AudioFile.git
+    GIT_TAG 1.1.0
+)
 
-# FetchContent_MakeAvailable(gnuradio)
+FetchContent_MakeAvailable(audiofile)
 
 add_subdirectory(fftw)
 add_subdirectory(cuda)

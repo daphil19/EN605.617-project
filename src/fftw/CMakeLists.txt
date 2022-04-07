@@ -7,12 +7,12 @@ ExternalProject_Add(
     CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR> --enable-shared --enable-threads --enable-sse2 --enable-avx --enable-avx2
 )
 
-add_library(fftw_benchmark fftw_driver.cpp FFTWPerformer.cpp)
+add_library(fftw_benchmark fftw_driver.cpp FFTWPerformer.cpp CPUSamples.cpp)
 
 # manually identify the fftw installation
 ExternalProject_Get_Property(fftw INSTALL_DIR)
 # the executable needs to know where to find libs to link
 target_link_directories(fftw_benchmark PUBLIC ${INSTALL_DIR}/lib)
 target_include_directories(fftw_benchmark PRIVATE ${INSTALL_DIR}/include)
-target_link_libraries(fftw_benchmark fftw3_threads fftw3 m io utils)
+target_link_libraries(fftw_benchmark fftw3_threads fftw3 m AudioFile io utils)
 add_dependencies(fftw_benchmark fftw)

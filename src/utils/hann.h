@@ -3,6 +3,6 @@
 
 #include <memory>
 
-std::shared_ptr<double[]> hann(int size);
+std::unique_ptr<double[]> hann(int size);
 
 #endif
