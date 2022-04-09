@@ -7,4 +7,5 @@ void perform_fft(size_t fft_size) {
     // // size_t N = 8192;
 
     // cudaMalloc((void**) &in, sizeof(cufftDoubleComplex) * fft_size);
+    
 }

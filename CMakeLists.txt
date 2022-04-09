@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
-project(en605.617-project LANGUAGES C CXX CUDA)
+project(en605.617-project LANGUAGES CXX CUDA)
 
 find_program(CCACHE_FOUND ccache)
 if(CCACHE_FOUND)

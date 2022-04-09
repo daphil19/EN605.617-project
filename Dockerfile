@@ -47,7 +47,7 @@ RUN eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" \
     tmux \
     vim \
     cmake \
-    gcc@10 \
+    gcc \
     ccache
 
 # This breaks when using podman non-root (i think because it uses the host's UID/GID?) but I think is needed for windows?

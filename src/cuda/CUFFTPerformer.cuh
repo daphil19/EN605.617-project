@@ -16,7 +16,7 @@ private:
     //////////////////////////////////////
     // TODO WE NEED TO HANDLE COMPLEX DATA (template?)
     //////////////////////////////////////
-    double* window;
+    // double* window;
     double* data_buffer;
     double* output_buffer;
     // we don't initialize this, but will effectively own it once we get constructed, so make it a smart pointer

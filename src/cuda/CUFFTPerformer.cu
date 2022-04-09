@@ -3,7 +3,7 @@
 #include <memory>
 
 #include "../io/SampleSource.h"
-#include "../utils/hann.h"
+#include "../hann.cuh"
 
 CUFFTPerformer::CUFFTPerformer(int fft_size, std::shared_ptr<SampleSource> source)
 {
@@ -11,10 +11,10 @@ CUFFTPerformer::CUFFTPerformer(int fft_size, std::shared_ptr<SampleSource> sourc
     this->source = source;
     // the window can simply live on the gpu, and since we only transfer to the
     // host during construction time, it can safely be paged
-    cudaMalloc((void**) &window, fft_size * sizeof(double));
-    auto window_host = hann(fft_size);
+    // cudaMalloc((void**) &window, fft_size * sizeof(double));
+    // auto window_host = hann(fft_size);
     // we need to get the actual underlying raw pointer from the smart pointer
-    cudaMemcpy(window, window_host.get(), fft_size * sizeof(double), cudaMemcpyHostToDevice);
+    // cudaMemcpy(window, window_host.get(), fft_size * sizeof(double), cudaMemcpyHostToDevice);
 
     // both inputs and outputs will likely need to interact with the host, so make these page locked
     cudaMallocHost((void**) &data_buffer, fft_size * sizeof(double));
@@ -31,5 +31,5 @@ CUFFTPerformer::~CUFFTPerformer()
 {
     cudaFree(output_buffer);
     cudaFree(data_buffer);
-    cudaFree(window);
+    // cudaFree(window);
 }
