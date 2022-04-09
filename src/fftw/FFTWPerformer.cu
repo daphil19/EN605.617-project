@@ -1,12 +1,16 @@
 #include "FFTWPerformer.cuh"
 
+#include <cmath>
 #include <memory>
 #include <string>
 #include <algorithm>
+#include <complex>
 
 #include <fftw3.h>
 #include <AudioFile.h>
 #include <thrust/host_vector.h>
+#include <thrust/functional.h>
+#include <thrust/iterator/constant_iterator.h>
 
 #include "../io/SampleSource.h"
 #include "../hann.cuh"
@@ -14,6 +18,8 @@
 
 // TODO maybe the interface is a spectrogramPerformer that has a function that returns a resultant 2-d double array
 
+// this is value is smaller than the log10 of the smallest positive double value
+#define MIN_REPLACEMENT -350.0
 
 
 FFTWPerformer::FFTWPerformer(int fft_size, const std::string file)
@@ -66,11 +72,18 @@ void FFTWPerformer::performFFT() {
     // in this structure, the outer index is the column of the image, and the inner index is the row
     // this allows for fft outputs to be bulk copied via memcpy as opposed to iterated over
     // hopefully, we don't need to transpose to get things to work later on
-    std::unique_ptr<std::unique_ptr<double[]>[]> output(new std::unique_ptr<double[]>[num_cols]);
+
+    // TODO WE SHOULD IMPROVE WHAT THE OUTPUT STRUCTURE IS!
+    // TODO do we want to convert this to an array? or maybe have it be a thrust vector??
+    // std::unique_ptr<std::unique_ptr<double[]>[]> output(new std::unique_ptr<double[]>[num_cols]);
+
+    // TODO will making these references make things faster?
+    thrust::host_vector<thrust::host_vector<double> >output(num_cols);
 
     for (int i = 0; i < num_cols; i++) {
         // first, allocate the results we will be using
-        output[i] = std::unique_ptr<double[]>(new double[fft_size]);
+        auto cur_col = thrust::host_vector<double>(output_fft_size);
+        
 
         // clear the input buffer in the event we don't have enough data to fill the buffer
         in_buffer->clear();
@@ -88,20 +101,48 @@ void FFTWPerformer::performFFT() {
         // TODO WE NEED TO DO THINKS LIKE NORMALIZE!
 
         // window
-        // in_buffer->applyWindow(window);
+        in_buffer->applyWindow(window);
 
         // execute
         fftw_execute(plan);
 
+        // next, we take the magnitude
+        // can we get away with shifting to make this faster?
+
         // write data back to output 
+        // TODO how are we supposed to get back to a single data type? is that by taking the magnitude?
+
+
+        // casting to complex array helps with normalization
+        auto out_buf_cast = reinterpret_cast<std::complex<double> *>(out_buffer);
+        
+        // copy contents into the output, getting the magnitude along the way
+        // TODO, also, don't forget about zero samples! this will result in a NaN
+        // do we want to just make those the smallest positive double value?
+        for (int j = 0; i < cur_col.size(); i++) {
+            cur_col[j] = std::abs(out_buf_cast[j]);
+            // TODO do we want to handle the zero case here?
+        }
+
+        // log scale... 10 log 10
+        // thrust::transform(cur_col.begin(), cur_col.end(), thrust::make_constant_iterator(10.0), cur_col.begin(), thrust::multiplies<double>());
+
+        // TODO log
+        // TODO do i need host here?
+        // log scale... 10 log 10
+        thrust::transform(cur_col.begin(), cur_col.end(), cur_col.begin(), [=] (double x) {
+            double logscale = 10.0 * log10(x);
+            if (isfinite(logscale)) {
+                logscale = MIN_REPLACEMENT;
+            }
+            return logscale;
+        });
+
+
+        // put the results in the output
+        output[i] = cur_col;
+
     }
-    
-
-
-
-    // std::unique_ptr<double[][]> output(new double[fft_size * 2][fft_size]);
-
-    // std::unique_ptr<std::unique_ptr<
 
     /*
         NOTE I think this is the intended order:

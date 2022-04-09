@@ -2,10 +2,9 @@
 
 #include <memory>
 
-#include "../io/SampleSource.h"
 #include "../hann.cuh"
 
-CUFFTPerformer::CUFFTPerformer(int fft_size, std::shared_ptr<SampleSource> source)
+CUFFTPerformer::CUFFTPerformer(int fft_size)
 {
     this->fft_size = fft_size;
     this->source = source;
@@ -17,8 +16,8 @@ CUFFTPerformer::CUFFTPerformer(int fft_size, std::shared_ptr<SampleSource> sourc
     // cudaMemcpy(window, window_host.get(), fft_size * sizeof(double), cudaMemcpyHostToDevice);
 
     // both inputs and outputs will likely need to interact with the host, so make these page locked
-    cudaMallocHost((void**) &data_buffer, fft_size * sizeof(double));
-    cudaMallocHost((void**) &output_buffer, fft_size * sizeof(double));
+    // cudaMallocHost((void**) &data_buffer, fft_size * sizeof(double));
+    // cudaMallocHost((void**) &output_buffer, fft_size * sizeof(double));
 
     // window = new double[fft_size];
     // data_buffer = new double[fft_size];
@@ -29,7 +28,7 @@ CUFFTPerformer::CUFFTPerformer(int fft_size, std::shared_ptr<SampleSource> sourc
 
 CUFFTPerformer::~CUFFTPerformer()
 {
-    cudaFree(output_buffer);
-    cudaFree(data_buffer);
+    // cudaFree(output_buffer)?;
+    // cudaFree(data_buffer);
     // cudaFree(window);
 }

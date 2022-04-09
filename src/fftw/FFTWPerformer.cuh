@@ -8,7 +8,6 @@
 #include <AudioFile.h>
 #include <thrust/host_vector.h>
 
-#include "../io/SampleSource.h"
 #include "CPUSamples.cuh"
 
 
@@ -47,6 +46,7 @@ private:
 
     fftw_plan plan;
 public:
+    // TODO do we want an alternate constructor that provides start/end for the spectrogram?
     FFTWPerformer(int fft_size, const std::string file);
     ~FFTWPerformer();
 

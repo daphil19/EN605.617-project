@@ -9,4 +9,7 @@ endif(CCACHE_FOUND)
 # globally enable separable compilation
 set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
 
+# used so that we can have lambdas on the device (or host)
+set (CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --extended-lambda")
+
 add_subdirectory(src)

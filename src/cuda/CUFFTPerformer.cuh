@@ -3,7 +3,9 @@
 
 #include <memory>
 
-#include "../io/SampleSource.h"
+#include <cufft.h>
+#include <AudioFile.h>
+#include <thrust/device_vector.h>
 
 class CUFFTPerformer
 {
@@ -11,19 +13,35 @@ private:
     /* data */
     // double* input;
     int fft_size;
-    // TODO it might make sense to make these smart pointers?
 
-    //////////////////////////////////////
-    // TODO WE NEED TO HANDLE COMPLEX DATA (template?)
-    //////////////////////////////////////
+    int output_fft_size;
+
+    int window_step_size;
+
+    bool complex;
+
+    thrust::device_vector<double> window;
+
+    // TODO out_buffer!
+
+    AudioFile<double> source;
+
+    // TODO in buffer!
+    // TODO GPUSamples!
+
+    cufftDoubleComplex* out_buffer;
+
+
+    cufftHandle plan;
+
     // double* window;
-    double* data_buffer;
-    double* output_buffer;
+    // double* data_buffer;
+    // double* output_buffer;
     // we don't initialize this, but will effectively own it once we get constructed, so make it a smart pointer
-    std::shared_ptr<SampleSource> source;
+    // std::shared_ptr<SampleSource> source;
 
 public:
-    CUFFTPerformer(int fft_size, std::shared_ptr<SampleSource> source);
+    CUFFTPerformer(int fft_size);
     ~CUFFTPerformer();
 };
 

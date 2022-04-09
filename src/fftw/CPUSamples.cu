@@ -84,4 +84,15 @@ void CPUSamples::load(std::vector<std::vector<double>> &source, int start, int e
 
 void CPUSamples::applyWindow(thrust::host_vector<double> window) {
     // TODO
+    // this function assumes that the window and the buffer are the same size
+    for (int i = 0; i < window.size(); i++) {
+        if (complex) {
+            // TODO how do we compute the window for a complex file?
+            // I *think* we treat it like a scalar multiplcation, meaning that we multiply both components
+            samples.complex[i][0] *= window[i];
+            samples.complex[i][1] *= window[i];
+        } else {
+            samples.real[i] *= window[i];
+        }
+    }
 }
