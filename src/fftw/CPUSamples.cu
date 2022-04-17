@@ -11,6 +11,7 @@ CPUSamples::CPUSamples(bool complex, int fft_size)
     this->complex = complex;
     size = fft_size;
 
+    // TODO do we need to worry about a different size?
     if (complex)
     {
         samples.complex = fftw_alloc_complex(fft_size);
@@ -61,8 +62,8 @@ void CPUSamples::clear()
     {
         // std::fill feels like a good candidate here, but I couldn't figure out a way to get it to go
         for (int i = 0; i < size; i++) {
-            samples.complex[i][0] = i;
-            samples.complex[i][1] = i;
+            samples.complex[i][0] = 0;
+            samples.complex[i][1] = 0;
         }
     }
     else

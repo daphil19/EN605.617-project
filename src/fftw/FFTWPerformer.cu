@@ -27,15 +27,16 @@ FFTWPerformer::FFTWPerformer(int fft_size, const std::string file)
     this->fft_size = fft_size;
     window = hann<thrust::host_vector<double> >(fft_size);
 
+    // So, this might not work because of the fact that all of the data gets loaded into memory...
+    // but the fact that it is a vector means we might be able to get away with a bunch of data? idk...
+    source = AudioFile<double>(file);
+
     // TODO we might not need complex as a member if we can get away with a void pointer that returns the samples naiively
     complex = source.getNumChannels() == 2;
 
     // this internal output buffer is used so that we can have a single plan, but also emit defensive copies of windows when the code gets executed
     out_buffer = fftw_alloc_complex(fft_size);
 
-    // So, this might not work because of the fact that all of the data gets loaded into memory...
-    // but the fact that it is a vector means we might be able to get away with a bunch of data? idk...
-    source = AudioFile<double>(file);
 
     in_buffer = std::unique_ptr<CPUSamples>(new CPUSamples(complex, fft_size));
 

@@ -1,13 +1,31 @@
 #include "CUFFTPerformer.cuh"
 
 #include <memory>
+#include <string>
 
+#include <AudioFile.h>
+#include <thrust/device_vector.h>
+
+#include "GPUSamples.cuh"
 #include "../hann.cuh"
 
-CUFFTPerformer::CUFFTPerformer(int fft_size)
+CUFFTPerformer::CUFFTPerformer(int fft_size, const std::string file)
 {
     this->fft_size = fft_size;
-    this->source = source;
+
+    source = AudioFile<double>(file);
+
+    window = hann<thrust::device_vector<double> >(fft_size);
+
+    complex = source.getNumChannels() == 2;
+
+    in_buffer = new GPUSamples(complex, fft_size);
+
+    cudaMalloc((void**)&out_buffer, fft_size * sizeof(cufftDoubleComplex));
+
+    cufftPlan1d(&plan, fft_size, complex ? CUFFT_Z2Z : CUFFT_D2Z, 1);
+
+    // this->source = source;
     // the window can simply live on the gpu, and since we only transfer to the
     // host during construction time, it can safely be paged
     // cudaMalloc((void**) &window, fft_size * sizeof(double));
@@ -28,7 +46,14 @@ CUFFTPerformer::CUFFTPerformer(int fft_size)
 
 CUFFTPerformer::~CUFFTPerformer()
 {
+    cufftDestroy(plan);
+    cudaFree(out_buffer);
+    delete in_buffer;
     // cudaFree(output_buffer)?;
     // cudaFree(data_buffer);
     // cudaFree(window);
+}
+
+void CUFFTPerformer::performFFT() {
+
 }

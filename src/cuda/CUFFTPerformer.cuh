@@ -2,10 +2,13 @@
 #define CUFFTPERFORMER_H_
 
 #include <memory>
+#include <string>
 
 #include <cufft.h>
 #include <AudioFile.h>
 #include <thrust/device_vector.h>
+
+#include "GPUSamples.cuh"
 
 class CUFFTPerformer
 {
@@ -22,12 +25,11 @@ private:
 
     thrust::device_vector<double> window;
 
-    // TODO out_buffer!
-
     AudioFile<double> source;
 
     // TODO in buffer!
     // TODO GPUSamples!
+    GPUSamples* in_buffer;
 
     cufftDoubleComplex* out_buffer;
 
@@ -41,8 +43,10 @@ private:
     // std::shared_ptr<SampleSource> source;
 
 public:
-    CUFFTPerformer(int fft_size);
+    CUFFTPerformer(int fft_size, const std::string file);
     ~CUFFTPerformer();
+
+    void performFFT();
 };
 
 

@@ -17,7 +17,7 @@ private:
         cufftDoubleComplex* complex;
     } samples;
 public:
-    GPUSamples(/* args */);
+    GPUSamples(bool complex, int fft_size);
     ~GPUSamples();
 
 
@@ -30,7 +30,7 @@ public:
     void clear();
     // TODO are we able to do this? do we need to use thrust?
     void load(std::vector<std::vector<double>> &source, int start, int end);
-    // void applyWindow(thrust::)
+    void applyWindow(thrust::device_vector<double> window);
 };
 
 #endif
