@@ -24,6 +24,7 @@ public:
     // TODO how is all of this cuda stuff supposed to work?
 
     bool isComplex();
+    // TODO can we actually keep this function around?
     GPUSamples::Samples getSamples();
     cufftDoubleReal* getReal();
     cufftDoubleComplex* getComplex();

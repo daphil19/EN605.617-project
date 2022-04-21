@@ -120,7 +120,7 @@ void FFTWPerformer::performFFT() {
         // copy contents into the output, getting the magnitude along the way
         // TODO, also, don't forget about zero samples! this will result in a NaN
         // do we want to just make those the smallest positive double value?
-        for (int j = 0; i < cur_col.size(); i++) {
+        for (int j = 0; j < cur_col.size(); j++) {
             cur_col[j] = std::abs(out_buf_cast[j]);
             // TODO do we want to handle the zero case here?
         }

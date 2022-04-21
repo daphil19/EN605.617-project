@@ -9,6 +9,7 @@
 #include "cuda_utilities.cuh"
 #include "hann.cuh"
 #include "fftw/FFTWPerformer.cuh"
+#include "cuda/CUFFTPerformer.cuh"
 
 
 int main(int argc, char const *argv[])
@@ -52,7 +53,12 @@ int main(int argc, char const *argv[])
     // c.clear();
 
     
+    std::cout << "Beginning the gpu one..." << std::endl;
 
+    CUFFTPerformer p2(256, "../../sermon.wav");
+    p2.performFFT();
+
+    std::cout << "Done!" << std::endl;
 
     return EXIT_SUCCESS;
 }
