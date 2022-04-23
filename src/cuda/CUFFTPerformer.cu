@@ -34,24 +34,6 @@ CUFFTPerformer::CUFFTPerformer(int fft_size, const std::string file)
     cudaMalloc((void**)&out_buffer, fft_size * sizeof(cufftDoubleComplex));
 
     cufftPlan1d(&plan, fft_size, complex ? CUFFT_Z2Z : CUFFT_D2Z, 1);
-
-    // this->source = source;
-    // the window can simply live on the gpu, and since we only transfer to the
-    // host during construction time, it can safely be paged
-    // cudaMalloc((void**) &window, fft_size * sizeof(double));
-    // auto window_host = hann(fft_size);
-    // we need to get the actual underlying raw pointer from the smart pointer
-    // cudaMemcpy(window, window_host.get(), fft_size * sizeof(double), cudaMemcpyHostToDevice);
-
-    // both inputs and outputs will likely need to interact with the host, so make these page locked
-    // cudaMallocHost((void**) &data_buffer, fft_size * sizeof(double));
-    // cudaMallocHost((void**) &output_buffer, fft_size * sizeof(double));
-
-    // window = new double[fft_size];
-    // data_buffer = new double[fft_size];
-    // // this internal output buffer is used so that we can have a single plan, but also emit defensive copies of windows when the code gets executed
-    // // TODO is sizing correct?
-    // output_buffer = new double[fft_size];    
 }
 
 CUFFTPerformer::~CUFFTPerformer()
@@ -59,9 +41,6 @@ CUFFTPerformer::~CUFFTPerformer()
     cufftDestroy(plan);
     cudaFree(out_buffer);
     delete in_buffer;
-    // cudaFree(output_buffer)?;
-    // cudaFree(data_buffer);
-    // cudaFree(window);
 }
 
 void CUFFTPerformer::performFFT() {
@@ -95,11 +74,11 @@ void CUFFTPerformer::performFFT() {
 
         in_buffer->applyWindow(window);
 
-        // TODO execute!!!
         complex ? cufftExecZ2Z(plan, in_buffer->getComplex(), out_buffer, CUFFT_FORWARD) : cufftExecD2Z(plan, in_buffer->getReal(), out_buffer) ;
 
         // auto out_buf_cast = 
 
+        // TODO this needs to be kernel-ified as well!
         for (int j = 0; j < cur_col.size(); j++) {
             // cur_col[j] = st::abs(out_buf_cast[j]);
             // std::abs(std::)

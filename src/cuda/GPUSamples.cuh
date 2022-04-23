@@ -21,15 +21,12 @@ public:
     ~GPUSamples();
 
 
-    // TODO how is all of this cuda stuff supposed to work?
-
     bool isComplex();
     // TODO can we actually keep this function around?
     GPUSamples::Samples getSamples();
     cufftDoubleReal* getReal();
     cufftDoubleComplex* getComplex();
     void clear();
-    // TODO are we able to do this? do we need to use thrust?
     void load(std::vector<std::vector<double>> &source, int start, int end);
     void applyWindow(thrust::device_vector<double> window);
 };

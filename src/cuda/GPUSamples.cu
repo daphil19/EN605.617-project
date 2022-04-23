@@ -70,7 +70,7 @@ void GPUSamples::clear() {
 }
 
 // FIXME WE NEED TO FIX THIS! (MOST LIKELY BY CREATING A KERNEL LIKE WE HAD ABOVE)
-// // TODO are we able to do this? do we need to use thrust?
+// TODO are we able to do this? do we need to use thrust?
 void GPUSamples::load(std::vector<std::vector<double>> &source, int start, int end) {
     // if before the loop this time so that we can appropriately allocate an additional buffer to the 
     if (complex) {
@@ -81,7 +81,6 @@ void GPUSamples::load(std::vector<std::vector<double>> &source, int start, int e
             host_buf[i].y = source[1][i];
         }
 
-        // TODO memcpy
         cudaMemcpy(samples.complex, host_buf, sizeof(cufftDoubleComplex) * (end - start), cudaMemcpyHostToDevice);
 
         delete[] host_buf;
