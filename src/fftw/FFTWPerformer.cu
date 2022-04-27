@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <complex>
 
+#include <iostream>
+
 #include <fftw3.h>
 #include <AudioFile.h>
 #include <thrust/host_vector.h>
@@ -82,6 +84,9 @@ void FFTWPerformer::performFFT() {
     thrust::host_vector<thrust::host_vector<double> >output(num_cols);
 
     for (int i = 0; i < num_cols; i++) {
+        // std::cout << i << std::endl;
+
+
         // first, allocate the results we will be using
         auto cur_col = thrust::host_vector<double>(output_fft_size);
         

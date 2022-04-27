@@ -15,20 +15,22 @@
 int main(int argc, char const *argv[])
 {
 
+    int fft_size = 8192;
+
     // the max size we can have for a file (on my 3080) is: 384307168202282325 samples (real)
 
     // TODO we will need to add more arguments (fftsize, etc.)
     std::string filename = argc == 2 ? argv[2] : "../../sermon.wav"; // TODO args!
 
     std::cout << "Attempting to load WAV file " << filename << "... this may take a while" << std::endl;
-    FFTWPerformer p(256, filename);
+    FFTWPerformer p(fft_size, filename);
     std::cout << "Successfuly loaded!" << std::endl;
 
     p.performFFT();
+    std::cout << "done cpu" << std::endl;
 
+    CUFFTPerformer p2(fft_size, filename);
     std::cout << "Beginning the gpu one..." << std::endl;
-
-    CUFFTPerformer p2(256, filename);
     p2.performFFT();
 
     std::cout << "Done!" << std::endl;

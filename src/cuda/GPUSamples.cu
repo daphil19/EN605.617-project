@@ -17,6 +17,18 @@ __global__ void clear_complex(cufftDoubleComplex* data) {
     sample.y = 0;
 }
 
+__global__ void apply_window_real(cufftDoubleReal* data, double* window) {
+    auto idx = get_thread_index();
+    data[idx] *= window[idx];
+}
+
+__global__ void apply_window_complex(cufftDoubleComplex* data, double* window) {
+    auto idx = get_thread_index();
+    auto sample = data[idx];
+    data[idx].x *= window[idx];
+    data[idx].y *= window[idx];
+}
+
 GPUSamples::GPUSamples(bool complex, int fft_size)
 {
     this->complex = complex;
@@ -69,8 +81,6 @@ void GPUSamples::clear() {
     }
 }
 
-// FIXME WE NEED TO FIX THIS! (MOST LIKELY BY CREATING A KERNEL LIKE WE HAD ABOVE)
-// TODO are we able to do this? do we need to use thrust?
 void GPUSamples::load(std::vector<std::vector<double>> &source, int start, int end) {
     // if before the loop this time so that we can appropriately allocate an additional buffer to the 
     if (complex) {
@@ -96,13 +106,19 @@ void GPUSamples::load(std::vector<std::vector<double>> &source, int start, int e
     }
 }
 
+// TODO we might want to be more defensive here, in case fftSize != window size
 void GPUSamples::applyWindow(thrust::device_vector<double> window) {
-    for (int i = 0; i < window.size(); i++) {
-        if (complex) {
-            samples.complex[i].x *= window[i];
-            samples.complex[i].y *= window[i];
-        } else {
-            samples.real[i] *= window[i];
-        }
+    if (complex) {
+        apply_window_complex<<<1, size>>>(samples.complex, thrust::raw_pointer_cast(window.data()));
+    } else {
+        apply_window_real<<<1, size>>>(samples.real, thrust::raw_pointer_cast(window.data()));
     }
+    // for (int i = 0; i < window.size(); i++) {
+    //     if (complex) {
+    //         samples.complex[i].x *= window[i];
+    //         samples.complex[i].y *= window[i];
+    //     } else {
+    //         samples.real[i] *= window[i];
+    //     }
+    // }
 }

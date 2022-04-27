@@ -54,23 +54,30 @@ void CUFFTPerformer::performFFT() {
     thrust::host_vector<thrust::host_vector<double> > output(num_cols);
 
     for (int i = 0; i < num_cols; i++) {
+
         
         // std::cout << i << std::endl;
 
         auto cur_col = thrust::host_vector<double>(output_fft_size);
 
-        std::cout << "pre-clear" << std::endl;
+        // std::cout << "pre-clear" << std::endl;
 
         in_buffer->clear();
 
-        std::cout << "post-clear" << std::endl;
+        // std::cout << "post-clear" << std::endl;
 
         auto start = fft_size / 2 * i;
         auto end = std::min(start + fft_size, source.getNumSamplesPerChannel());
 
-        std::cout << "pre-load" << std::endl;
+        // std::cout << "pre-load" << std::endl;
+
+        // TODO I think that performance improvements here are essential
+        // chiefly, I think that batching should attempt to be done if possible
+        // though, to be fair, upping the fft_size to a high number really helps 
 
         in_buffer->load(source.samples, start, end);
+
+        // std::cout << "load done" << std::endl;
 
         in_buffer->applyWindow(window);
 
@@ -79,15 +86,15 @@ void CUFFTPerformer::performFFT() {
         // auto out_buf_cast = 
 
         // TODO this needs to be kernel-ified as well!
-        for (int j = 0; j < cur_col.size(); j++) {
-            // cur_col[j] = st::abs(out_buf_cast[j]);
-            // std::abs(std::)
-            // TODO we need to take the abs of the thing that we just computed and go from there
-            cur_col[j] = pow(out_buffer[j].x, 2) + pow(out_buffer[j].y, 2);
-        }
+        // for (int j = 0; j < cur_col.size(); j++) {
+        //     // cur_col[j] = st::abs(out_buf_cast[j]);
+        //     // std::abs(std::)
+        //     // TODO we need to take the abs of the thing that we just computed and go from there
+        //     cur_col[j] = pow(out_buffer[j].x, 2) + pow(out_buffer[j].y, 2);
+        // }
 
         // NOTE if using vscode, the error squiggle under `__device__` is a false negative; this code compiles fine!
-        thrust::transform(cur_col.begin(), cur_col.end(), cur_col.begin(), [=] __device__ (double x) {
+        thrust::transform(cur_col.begin(), cur_col.end(), cur_col.begin(), [=] (double x) {
             double logscale = 10.0 * log10(x);
             if (isfinite(logscale)) {
                 logscale = MIN_REPLACEMENT;
