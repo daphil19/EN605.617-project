@@ -13,28 +13,6 @@
 #include <chrono>
 #include <thread>
 
-
-
-// __host__ cudaEvent_t get_time(void)
-// {
-//     cudaEvent_t time;
-//     cudaEventCreate(&time);
-//     cudaEventRecord(time);
-//     return time;
-// }
-
-// // print the delta based on the provided start and stop events
-// __host__ void print_delta(cudaEvent_t start, cudaEvent_t stop)
-// {
-//     cudaEventSynchronize(stop);
-
-//     float delta = 0;
-//     cudaEventElapsedTime(&delta, start, stop);
-//     // printf("%f\n", delta);
-//     std::cout << delta << std::endl;
-// }
-
-
 int main(int argc, char const *argv[])
 {
     int fft_size = 8192;

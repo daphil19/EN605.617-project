@@ -132,26 +132,40 @@ void FFTWPerformer::performFFT() {
         // TODO, also, don't forget about zero samples! this will result in a NaN
         // do we want to just make those the smallest positive double value?
 
-        for (int j = 0; j < cur_col.size(); j++) {
-            double magSquared = pow(std::abs(out_buf_cast[j]), 2);
-            double logScale = 10.0 * log10(magSquared); 
-            cur_col[j] = isfinite(logScale) ? logScale : MIN_REPLACEMENT;
-        }
+        // TODO would it be possible for this to be something we do in the transform below as well?
+        // for (int j = 0; j < cur_col.size(); j++) {
+        //     double magSquared = pow(std::abs(out_buf_cast[j]), 2);
+        //     double logScale = 10.0 * log10(magSquared); 
+        //     cur_col[j] = isfinite(logScale) ? logScale : MIN_REPLACEMENT;
+        // }
         
 
         // while this would leverage a thrust transform, the parallel benefit from thrust doesn't outweigh the double-iteration cost
         // the for loop above that iteratively transforms the data and stores it in the results array is faster
         // also, trying to wrap the pointer in a vector and doing the transform all together is even slower than this!
-        // for (int j = 0; j < cur_col.size(); j++) {
-        //     cur_col[j] = std::abs(out_buf_cast[j]);
-        // }
-        // thrust::transform(cur_col.begin(), cur_col.end(), cur_col.begin(), [=] (double x) {
-        //     double logscale = 10.0 * log10(x);
-        //     if (!isfinite(logscale)) {
-        //         logscale = MIN_REPLACEMENT;
-        //     }
-        //     return logscale;
+        
+        // this one seems to be the fastest, as we don't have an extra copy and still benefit from some of the transform being parallel
+        for (int j = 0; j < cur_col.size(); j++) {
+            cur_col[j] = std::abs(out_buf_cast[j]);
+        }
+        thrust::transform(cur_col.begin(), cur_col.end(), cur_col.begin(), [=] (double x) {
+            double logscale = 10.0 * log10(x);
+            if (!isfinite(logscale)) {
+                logscale = MIN_REPLACEMENT;
+            }
+            return logscale;
+        });
+
+
+        // this approach may be the slowest of the three, all things considered
+        // BUT, with the optimizations turned on it actually ends up being pretty fast...
+        // auto out_buf_vec = thrust::host_vector<std::complex<double>>(out_buf_cast, out_buf_cast + output_fft_size);
+        // thrust::transform(out_buf_vec.begin(), out_buf_vec.end(), cur_col.begin(), [=] (std::complex<double> x) {
+        //     double magSquared = pow(std::abs(x), 2);
+        //     double logScale = 10.0 * log10(magSquared);
+        //     return isfinite(logScale) ? logScale : MIN_REPLACEMENT;
         // });
+        
 
 
         // put the results in the output
