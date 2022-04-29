@@ -13,6 +13,7 @@
 #include <thrust/host_vector.h>
 #include <thrust/functional.h>
 #include <thrust/iterator/constant_iterator.h>
+#include <thrust/execution_policy.h>
 
 #include "../io/SampleSource.h"
 #include "../hann.cuh"
@@ -47,6 +48,7 @@ FFTWPerformer::FFTWPerformer(int fft_size, const std::string file)
     // TODO we might be able to simplify this by providing a void pointer?
     plan = complex ? fftw_plan_dft_1d(fft_size, in_buffer->getComplex(), out_buffer, FFTW_FORWARD, FFTW_ESTIMATE): fftw_plan_dft_r2c_1d(fft_size, in_buffer->getReal(), out_buffer, FFTW_ESTIMATE);
     
+    output_fft_size = complex ? fft_size : (fft_size / 2) + 1;
 }
 
 FFTWPerformer::~FFTWPerformer()
@@ -56,6 +58,9 @@ FFTWPerformer::~FFTWPerformer()
 }
 
 void FFTWPerformer::performFFT() {
+
+
+    std::cout << "fftw performer will use up to " << fftw_planner_nthreads() << " threads" << std::endl;
 
     // TODO is it a window and then an fft, or an fft and then a window?
 
@@ -122,31 +127,39 @@ void FFTWPerformer::performFFT() {
         // casting to complex array helps with normalization
         auto out_buf_cast = reinterpret_cast<std::complex<double> *>(out_buffer);
         
+        // std::cout << cur_col.size() << std::endl;
         // copy contents into the output, getting the magnitude along the way
         // TODO, also, don't forget about zero samples! this will result in a NaN
         // do we want to just make those the smallest positive double value?
+
         for (int j = 0; j < cur_col.size(); j++) {
-            cur_col[j] = std::abs(out_buf_cast[j]);
-            // TODO do we want to handle the zero case here?
+            double magSquared = pow(std::abs(out_buf_cast[j]), 2);
+            double logScale = 10.0 * log10(magSquared); 
+            cur_col[j] = isfinite(logScale) ? logScale : MIN_REPLACEMENT;
         }
+        
 
-        // log scale... 10 log 10
-        // thrust::transform(cur_col.begin(), cur_col.end(), thrust::make_constant_iterator(10.0), cur_col.begin(), thrust::multiplies<double>());
-
-        // TODO log
-        // TODO do i need host here?
-        // log scale... 10 log 10
-        thrust::transform(cur_col.begin(), cur_col.end(), cur_col.begin(), [=] (double x) {
-            double logscale = 10.0 * log10(x);
-            if (isfinite(logscale)) {
-                logscale = MIN_REPLACEMENT;
-            }
-            return logscale;
-        });
+        // while this would leverage a thrust transform, the parallel benefit from thrust doesn't outweigh the double-iteration cost
+        // the for loop above that iteratively transforms the data and stores it in the results array is faster
+        // also, trying to wrap the pointer in a vector and doing the transform all together is even slower than this!
+        // for (int j = 0; j < cur_col.size(); j++) {
+        //     cur_col[j] = std::abs(out_buf_cast[j]);
+        // }
+        // thrust::transform(cur_col.begin(), cur_col.end(), cur_col.begin(), [=] (double x) {
+        //     double logscale = 10.0 * log10(x);
+        //     if (!isfinite(logscale)) {
+        //         logscale = MIN_REPLACEMENT;
+        //     }
+        //     return logscale;
+        // });
 
 
         // put the results in the output
         output[i] = cur_col;
+        // for (int j = 0; j < output_fft_size; j++) {
+        //     std::cout << cur_col[j] << " ";
+        // }
+        // std::cout << "\\" << std::endl;
 
     }
 
