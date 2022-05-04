@@ -33,7 +33,7 @@ This project is targeted for cuda version 11.x, and uses `cmake` to build. The m
 To configure the `cmake` project, run:
 
 ```
-cmake . -Bbuild
+cmake . -Bbuild -DCMAKE_BUILD_TYPE:STRING=Release
 ```
 
 at the repo root.
@@ -41,11 +41,12 @@ at the repo root.
 To build, run
 
 ```
-cmake --build build
+cmake --build build --target en605.617-project -j $(nproc)
 ```
 
 To execute, run
 
 ```
-./build/en605.617-project
+cd build/src
+./en605.617-project
 ```
