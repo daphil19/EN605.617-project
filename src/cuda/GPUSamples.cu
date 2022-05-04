@@ -12,9 +12,11 @@ __global__ void clear_real(cufftDoubleReal* data) {
 __global__ void clear_complex(cufftDoubleComplex* data) {
     auto idx = get_thread_index();
     // storing in register here to potentially improve performance?
-    auto sample = data[idx];
-    sample.x = 0;
-    sample.y = 0;
+    // auto sample = data[idx];
+    // sample.x = 0;
+    // sample.y = 0;
+    data[idx].x = 0;
+    data[idx].y = 0;
 }
 
 __global__ void apply_window_real(cufftDoubleReal* data, double* window) {
@@ -24,9 +26,21 @@ __global__ void apply_window_real(cufftDoubleReal* data, double* window) {
 
 __global__ void apply_window_complex(cufftDoubleComplex* data, double* window) {
     auto idx = get_thread_index();
-    auto sample = data[idx];
+    // auto sample = data[idx];
     data[idx].x *= window[idx];
     data[idx].y *= window[idx];
+}
+
+__global__ void normalize_real(cufftDoubleReal* data, double step, int offset) {
+    auto idx = get_thread_index();
+    data[idx] = (data[idx] + offset) * step;
+}
+
+__global__ void normalize_complex(cufftDoubleComplex* data, double step, int offset) {
+    auto idx = get_thread_index();
+    auto sample = data[idx];
+    data[idx].y = (sample.y + offset) * step;
+    data[idx].x = (sample.x + offset) * step;
 }
 
 GPUSamples::GPUSamples(bool complex, int fft_size)
@@ -121,4 +135,15 @@ void GPUSamples::applyWindow(thrust::device_vector<double> window) {
     //         samples.real[i] *= window[i];
     //     }
     // }
+}
+
+void GPUSamples::normalize(int bitsPerSample) {
+    double step = 1.0 / pow(2, bitsPerSample);
+    int offset = pow(2, bitsPerSample - 1) + 1; // intervals are usually [-2^(n - 1) - 1, 2^(n - 1)] for data types
+
+    if (complex) {
+        normalize_complex<<<1, size>>>(samples.complex, step, offset);
+    } else {
+        normalize_real<<<1, size>>>(samples.real, step, offset);
+    }
 }

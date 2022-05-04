@@ -29,6 +29,8 @@ public:
     void clear();
     void load(std::vector<std::vector<double>> &source, int start, int end);
     void applyWindow(thrust::device_vector<double> window);
+    void normalize(int bitsPerSample);
+
 };
 
 #endif

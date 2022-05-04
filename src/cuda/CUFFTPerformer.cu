@@ -60,8 +60,8 @@ CUFFTPerformer::~CUFFTPerformer()
 void CUFFTPerformer::performFFT() {
     auto num_samples = source.getNumSamplesPerChannel();
 
-    // TODO is this supposed to be / 2 iff the data is real instead of at all times?
-    auto num_cols = (num_samples / (fft_size / 2));
+    // this results in 50% overlap
+    int num_cols = num_samples / (fft_size / 2);
 
 
     // TODO this will have to be copied back to the host in some way
@@ -82,6 +82,7 @@ void CUFFTPerformer::performFFT() {
 
         // std::cout << "post-clear" << std::endl;
 
+        // these numbers are in samples!
         auto start = fft_size / 2 * i;
         auto end = std::min(start + fft_size, source.getNumSamplesPerChannel());
 
@@ -93,12 +94,14 @@ void CUFFTPerformer::performFFT() {
 
         in_buffer->load(source.samples, start, end);
 
+        in_buffer->normalize(source.getBitDepth());
         // std::cout << "load done" << std::endl;
 
         in_buffer->applyWindow(window);
 
         complex ? cufftExecZ2Z(plan, in_buffer->getComplex(), out_buffer, CUFFT_FORWARD) : cufftExecD2Z(plan, in_buffer->getReal(), out_buffer) ;
 
+        // TODO can we optimize this size?
         post_fft_transform<<<1, output_fft_size>>>(out_buffer, thrust::raw_pointer_cast(col_result.data()));
 
         // auto out_buf_cast = 

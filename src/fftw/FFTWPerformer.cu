@@ -49,12 +49,21 @@ FFTWPerformer::FFTWPerformer(int fft_size, const std::string file)
     plan = complex ? fftw_plan_dft_1d(fft_size, in_buffer->getComplex(), out_buffer, FFTW_FORWARD, FFTW_ESTIMATE): fftw_plan_dft_r2c_1d(fft_size, in_buffer->getReal(), out_buffer, FFTW_ESTIMATE);
     
     output_fft_size = complex ? fft_size : (fft_size / 2) + 1;
+
+
 }
 
 FFTWPerformer::~FFTWPerformer()
 {
     fftw_destroy_plan(plan);
     fftw_free(out_buffer);
+}
+
+void FFTWPerformer::normalize() {
+    double step = 1.0 / source.getBitDepth();
+    int offset = pow(2, source.getBitDepth() - 1) + 1; // intervals are usually [-2^(n - 1) - 1, 2^(n - 1)] for data types
+
+    
 }
 
 void FFTWPerformer::performFFT() {
@@ -72,7 +81,8 @@ void FFTWPerformer::performFFT() {
 
 
     // the number of colums in the output
-    int num_cols = (num_samples / (fft_size / 2)) ;
+    // we are aiming for a 50% overlap
+    int num_cols = num_samples / (fft_size / 2);
 
 
     // TODO better typing
@@ -102,12 +112,15 @@ void FFTWPerformer::performFFT() {
         // TODO next, we need to load data into the buffer
 
         // TODO is there a better way for this to be done?
+        // these numbers are in samples!
         auto start = fft_size / 2 * i;
         auto end = std::min(start + fft_size, source.getNumSamplesPerChannel());
 
         // now we _actually_ load the samples
         // source.samples
         in_buffer->load(source.samples, start, end);
+
+        in_buffer->normalize(source.getBitDepth());
 
         // TODO WE NEED TO DO THINKS LIKE NORMALIZE!
 
@@ -149,7 +162,7 @@ void FFTWPerformer::performFFT() {
             cur_col[j] = std::abs(out_buf_cast[j]);
         }
         thrust::transform(cur_col.begin(), cur_col.end(), cur_col.begin(), [=] (double x) {
-            double logscale = 10.0 * log10(x);
+            double logscale = 10.0 * log10(pow(x, 2));
             if (!isfinite(logscale)) {
                 logscale = MIN_REPLACEMENT;
             }

@@ -45,6 +45,8 @@ private:
     std::unique_ptr<CPUSamples> in_buffer;
 
     fftw_plan plan;
+
+    void normalize();
 public:
     // TODO do we want an alternate constructor that provides start/end for the spectrogram?
     FFTWPerformer(int fft_size, const std::string file);

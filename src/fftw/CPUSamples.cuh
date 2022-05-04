@@ -31,6 +31,8 @@ public:
 
     // the window should be the same size as the buffer here
     void applyWindow(thrust::host_vector<double> window);
+
+    void normalize(int bitsPerSample);
 };
 
 #endif
