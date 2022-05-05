@@ -52,7 +52,8 @@ public:
     FFTWPerformer(int fft_size, const std::string file);
     ~FFTWPerformer();
 
-    void performFFT();
+    // void performFFT();
+    thrust::host_vector<thrust::host_vector<double> > performFFT();
     
 };
 

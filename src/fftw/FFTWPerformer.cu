@@ -66,7 +66,7 @@ void FFTWPerformer::normalize() {
     
 }
 
-void FFTWPerformer::performFFT() {
+thrust::host_vector<thrust::host_vector<double> > FFTWPerformer::performFFT() {
 
 
     std::cout << "fftw performer will use up to " << fftw_planner_nthreads() << " threads" << std::endl;
@@ -200,5 +200,5 @@ void FFTWPerformer::performFFT() {
         slide by ...?
      */
 
-
+    return output;
 }

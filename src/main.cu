@@ -5,6 +5,8 @@
 #include <complex>
 
 #include <AudioFile.h>
+#include <thrust/host_vector.h>
+#include <thrust/extrema.h>
 
 #include "cuda_utilities.cuh"
 #include "hann.cuh"
@@ -12,6 +14,7 @@
 #include "cuda/CUFFTPerformer.cuh"
 #include <chrono>
 #include <thread>
+
 
 // adapted from https://stackoverflow.com/a/47785639
 const int BYTES_PER_PIXEL = 3; /// red, green, & blue
@@ -101,6 +104,20 @@ unsigned char* createBitmapInfoHeader (int height, int width)
     return infoHeader;
 }
 
+void outputResultsToFile(thrust::host_vector<thrust::host_vector<double> > const& results) {
+    thrust::host_vector<double> maxs;
+    thrust::transform(results.begin(), results.end(), maxs.begin(), [=] (thrust::host_vector<double> column) {
+        return *thrust::max_element(column.begin(), column.end());
+    });
+    thrust::host_vector<double> mins;
+    thrust::transform(results.begin(), results.end(), mins.begin(), [=] (thrust::host_vector<double> column) {
+        return *thrust::min_element(column.begin(), column.end());
+    });
+
+    double maxOfMaxs = *thrust::max_element(maxs.begin(), maxs.end());
+    double maxOfMins = *thrust::max_element(mins.begin(), mins.end());
+}
+
 int main(int argc, char const *argv[])
 {
     int fft_size = 8192;
@@ -149,6 +166,10 @@ int main(int argc, char const *argv[])
     // take each and put them in their own vectors
     // then, reduce on those to get the aboslue max and min, using those values to get the rgb range
 
+    // todo it looks like the actual approach is to take the max of both mins and maxs
+    // thrust::host
+    thrust::host_vector<double> maxs;
+    // thrust::transform()
 
 
     return EXIT_SUCCESS;

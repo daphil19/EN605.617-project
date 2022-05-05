@@ -7,6 +7,7 @@
 #include <cufft.h>
 #include <AudioFile.h>
 #include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 
 #include "GPUSamples.cuh"
 
@@ -37,7 +38,7 @@ public:
     CUFFTPerformer(int fft_size, const std::string file);
     ~CUFFTPerformer();
 
-    void performFFT();
+    thrust::host_vector<thrust::host_vector<double> > performFFT();
 };
 
 

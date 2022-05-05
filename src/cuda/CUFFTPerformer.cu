@@ -57,7 +57,7 @@ CUFFTPerformer::~CUFFTPerformer()
     delete in_buffer;
 }
 
-void CUFFTPerformer::performFFT() {
+thrust::host_vector<thrust::host_vector<double> > CUFFTPerformer::performFFT() {
     auto num_samples = source.getNumSamplesPerChannel();
 
     // this results in 50% overlap
@@ -136,5 +136,5 @@ void CUFFTPerformer::performFFT() {
         // std::cout << "\\" << std::endl;
     }
 
-
+    return output;
 }
