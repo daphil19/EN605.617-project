@@ -4,6 +4,8 @@
 
 #include "kernel_utils.cuh"
 
+// TODO: maybe make these complex kernels a 2-d thing?
+
 __global__ void clear_real(cufftDoubleReal* data) {
     auto idx = get_thread_index();
     data[idx] = 0;
@@ -101,8 +103,8 @@ void GPUSamples::load(std::vector<std::vector<double>> &source, int start, int e
         auto host_buf = new cufftDoubleComplex[end - start];
         // TODO do we need this buffer for both?
         for (int i = 0; i < end - start; i++) {
-            host_buf[i].x = source[0][i];
-            host_buf[i].y = source[1][i];
+            host_buf[i].x = source[0][i + start];
+            host_buf[i].y = source[1][i + start];
         }
 
         cudaMemcpy(samples.complex, host_buf, sizeof(cufftDoubleComplex) * (end - start), cudaMemcpyHostToDevice);
@@ -111,10 +113,10 @@ void GPUSamples::load(std::vector<std::vector<double>> &source, int start, int e
     } else {
         auto host_buf = new cufftDoubleReal[end - start];
         for (int i = 0; i < end - start; i++) {
-            host_buf[i] = source[0][i];
+            host_buf[i] = source[0][i + start];
         }
 
-        cudaMemcpy(samples.real, host_buf, sizeof(double) * (end - start), cudaMemcpyHostToDevice);
+        cudaMemcpy(samples.real, host_buf, sizeof(cufftDoubleReal) * (end - start), cudaMemcpyHostToDevice);
 
         delete[] host_buf;
     }

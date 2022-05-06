@@ -114,13 +114,13 @@ thrust::host_vector<thrust::host_vector<double> > FFTWPerformer::performFFT() {
         // TODO is there a better way for this to be done?
         // these numbers are in samples!
         auto start = fft_size / 2 * i;
-        auto end = std::min(start + fft_size, source.getNumSamplesPerChannel());
+        auto end = std::min(start + fft_size, num_samples);
 
         // now we _actually_ load the samples
         // source.samples
         in_buffer->load(source.samples, start, end);
 
-        in_buffer->normalize(source.getBitDepth());
+        // in_buffer->normalize(source.getBitDepth());
 
         // TODO WE NEED TO DO THINKS LIKE NORMALIZE!
 
@@ -136,10 +136,18 @@ thrust::host_vector<thrust::host_vector<double> > FFTWPerformer::performFFT() {
         // write data back to output 
         // TODO how are we supposed to get back to a single data type? is that by taking the magnitude?
 
+        // if (!complex) {
+        //     out_buffer[0][0] = 0;
+        //     out_buffer[0][1] = 0;
+        // }
 
         // casting to complex array helps with normalization
         auto out_buf_cast = reinterpret_cast<std::complex<double> *>(out_buffer);
         
+        // if (!complex) {
+        //     out_buf_cast[0] = std::complex{ 0, 0 };
+        // }
+
         // std::cout << cur_col.size() << std::endl;
         // copy contents into the output, getting the magnitude along the way
         // TODO, also, don't forget about zero samples! this will result in a NaN

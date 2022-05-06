@@ -68,6 +68,8 @@ thrust::host_vector<thrust::host_vector<double> > CUFFTPerformer::performFFT() {
     thrust::host_vector<thrust::host_vector<double> > output(num_cols);
 
     thrust::device_vector<double> col_result(output_fft_size);
+    // double* other_col_result;
+    // cudaMallocHost((void**)&other_col_result, sizeof(double) * output_fft_size);
 
     for (int i = 0; i < num_cols; i++) {
 
@@ -84,7 +86,7 @@ thrust::host_vector<thrust::host_vector<double> > CUFFTPerformer::performFFT() {
 
         // these numbers are in samples!
         auto start = fft_size / 2 * i;
-        auto end = std::min(start + fft_size, source.getNumSamplesPerChannel());
+        auto end = std::min(start + fft_size, num_samples);
 
         // std::cout << "pre-load" << std::endl;
 
@@ -94,12 +96,24 @@ thrust::host_vector<thrust::host_vector<double> > CUFFTPerformer::performFFT() {
 
         in_buffer->load(source.samples, start, end);
 
-        in_buffer->normalize(source.getBitDepth());
+        // in_buffer->normalize(source.getBitDepth());
         // std::cout << "load done" << std::endl;
 
         in_buffer->applyWindow(window);
 
-        complex ? cufftExecZ2Z(plan, in_buffer->getComplex(), out_buffer, CUFFT_FORWARD) : cufftExecD2Z(plan, in_buffer->getReal(), out_buffer) ;
+        // for (int j = 0; j < 10; j++) {
+        //     std::cout << in_buffer->getReal() << " ";
+        // }
+        // std::cout << std::endl;
+
+        cufftResult res = complex ? cufftExecZ2Z(plan, in_buffer->getComplex(), out_buffer, CUFFT_FORWARD) : cufftExecD2Z(plan, in_buffer->getReal(), out_buffer) ;
+
+        cudaDeviceSynchronize();
+        // if (res != CUFFT_SUCCESS) {
+        //     std::cout << "ERROR!" << std::endl;
+        // }
+
+
 
         // TODO can we optimize this size?
         post_fft_transform<<<1, output_fft_size>>>(out_buffer, thrust::raw_pointer_cast(col_result.data()));
@@ -135,6 +149,7 @@ thrust::host_vector<thrust::host_vector<double> > CUFFTPerformer::performFFT() {
         // }
         // std::cout << "\\" << std::endl;
     }
+    // cudaFreeHost(other_col_result);
 
     return output;
 }

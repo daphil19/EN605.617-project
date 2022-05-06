@@ -7,6 +7,7 @@
 #include <AudioFile.h>
 #include <thrust/host_vector.h>
 #include <thrust/extrema.h>
+#include <thrust/sequence.h>
 
 #include "cuda_utilities.cuh"
 #include "hann.cuh"
@@ -21,36 +22,11 @@ const int BYTES_PER_PIXEL = 3; /// red, green, & blue
 const int FILE_HEADER_SIZE = 14;
 const int INFO_HEADER_SIZE = 40;
 
-void generateBitmapImage(unsigned char* image, int height, int width, char* imageFileName);
-unsigned char* createBitmapFileHeader(int height, int stride);
-unsigned char* createBitmapInfoHeader(int height, int width);
+// void generateBitmapImage(std::byte* image, int height, int width, char* imageFileName);
+// unsigned char* createBitmapFileHeader(int height, int stride);
+// unsigned char* createBitmapInfoHeader(int height, int width);
 
-void generateBitmapImage (unsigned char* image, int height, int width, char* imageFileName)
-{
-    int widthInBytes = width * BYTES_PER_PIXEL;
-
-    unsigned char padding[3] = {0, 0, 0};
-    int paddingSize = (4 - (widthInBytes) % 4) % 4;
-
-    int stride = (widthInBytes) + paddingSize;
-
-    FILE* imageFile = fopen(imageFileName, "wb");
-
-    unsigned char* fileHeader = createBitmapFileHeader(height, stride);
-    fwrite(fileHeader, 1, FILE_HEADER_SIZE, imageFile);
-
-    unsigned char* infoHeader = createBitmapInfoHeader(height, width);
-    fwrite(infoHeader, 1, INFO_HEADER_SIZE, imageFile);
-
-    int i;
-    for (i = 0; i < height; i++) {
-        fwrite(image + (i*widthInBytes), BYTES_PER_PIXEL, width, imageFile);
-        fwrite(padding, 1, paddingSize, imageFile);
-    }
-
-    fclose(imageFile);
-}
-
+// i could (maybe should?) refactor all of the unsigned char* refs to std::byte, but not right now
 unsigned char* createBitmapFileHeader (int height, int stride)
 {
     int fileSize = FILE_HEADER_SIZE + INFO_HEADER_SIZE + (stride * height);
@@ -104,28 +80,167 @@ unsigned char* createBitmapInfoHeader (int height, int width)
     return infoHeader;
 }
 
+void generateBitmapImage (unsigned char* image, int height, int width, char* imageFileName)
+{
+    int widthInBytes = width * BYTES_PER_PIXEL;
+
+    unsigned char padding[3] = {0, 0, 0};
+    int paddingSize = (4 - (widthInBytes) % 4) % 4;
+
+    int stride = (widthInBytes) + paddingSize;
+
+    FILE* imageFile = fopen(imageFileName, "wb");
+
+    unsigned char* fileHeader = createBitmapFileHeader(height, stride);
+    fwrite(fileHeader, 1, FILE_HEADER_SIZE, imageFile);
+
+    unsigned char* infoHeader = createBitmapInfoHeader(height, width);
+    fwrite(infoHeader, 1, INFO_HEADER_SIZE, imageFile);
+
+    int i;
+    for (i = 0; i < height; i++) {
+        fwrite(image + (i*widthInBytes), BYTES_PER_PIXEL, width, imageFile);
+        fwrite(padding, 1, paddingSize, imageFile);
+    }
+
+    fclose(imageFile);
+}
+
+
+// segfault :( :( :(
+
 void outputResultsToFile(thrust::host_vector<thrust::host_vector<double> > const& results) {
-    thrust::host_vector<double> maxs;
+    std::cout << "here" << std::endl;
+    thrust::host_vector<double> maxs(results.size());
     thrust::transform(results.begin(), results.end(), maxs.begin(), [=] (thrust::host_vector<double> column) {
         return *thrust::max_element(column.begin(), column.end());
     });
-    thrust::host_vector<double> mins;
+    std::cout << "maxs done" << std::endl;
+    thrust::host_vector<double> mins(results.size());
     thrust::transform(results.begin(), results.end(), mins.begin(), [=] (thrust::host_vector<double> column) {
         return *thrust::min_element(column.begin(), column.end());
     });
 
     double maxOfMaxs = *thrust::max_element(maxs.begin(), maxs.end());
     double maxOfMins = *thrust::max_element(mins.begin(), mins.end());
+
+    size_t height = results[0].size();
+    size_t width = results.size();
+
+    std::cout << "after transposes" << std::endl;
+
+    // double 
+
+    std::cout << maxOfMins << "->" << maxOfMaxs << std::endl;
+
+// int pixel_value = (int)round( 255 * (power_in_db[i] - min_db) / (max_db - min_db) );
+// if (pixel_value < 0) { pixel_value = 0; }
+// if (pixel_value > 255) { pixel_value = 255; }
+
+    // thrust::host_vector<int> indices(results.size());
+    // thrust::sequence(indices.begin(), indices.end());
+    thrust::host_vector<thrust::host_vector<unsigned char> >bytes(results.size(), thrust::host_vector<unsigned char>(results[0].size()));
+
+    for (int i = 0; i < results.size(); i++) {
+        thrust::transform(results[i].begin(), results[i].end(), bytes[i].begin(), [=] (double res) {
+            if (res <= maxOfMins) {
+                return (unsigned char)255;
+            } else if (res >= maxOfMaxs) {
+                return (unsigned char)0;
+            } else {
+                return (unsigned char)round( 255 * (res - maxOfMins) / (maxOfMaxs - maxOfMins));
+            }
+        });        
+    }
+
+    std::cout << "here?" << std::endl;
+
+    // for (int i = 0; i < bytes.size(); i++) {
+    //     for (int j = 0; j < bytes[i].size(); j++){ 
+    //         std::cout << bytes[i][j] << " ";
+    //     }
+    //     std::cout << std::endl;
+    // }
+
+    // this breaks :(
+    unsigned char imageBytes[height][width][BYTES_PER_PIXEL];
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            for (int k = 0; k < BYTES_PER_PIXEL; k++) {
+                imageBytes[i][j][k] = bytes[j][i];
+            }
+        }
+    }
+
+    std::cout << "here!" << std::endl;
+
+    generateBitmapImage((unsigned char*) imageBytes, height, width, "../../foo3.bmp");
+
+    // thrust::transform(indices.begin(), indices.end(), bytes.begin(), [=] (int i) {
+    //     thrust::transform(results[i].begin(), results[i].end(), bytes[i].begin(), [=] (double res) {
+    //         if (res <= maxOfMins) {
+    //             return (unsigned char)255;
+    //         } else if (res >= maxOfMaxs) {
+    //             return (unsigned char)0;
+    //         } else {
+    //             return (unsigned char)round( 255 * (res - maxOfMins) / (maxOfMaxs - maxOfMins));
+    //         }
+    //     });
+    //     return bytes[i];
+    // });
+
+    // is a nested transform faster?
+    // thrust::transform(results.begin(), results.end(), bytes.begin(), [=] (thrust::host_vector<double> column) {
+
+    // });
+
+
+    // TODO I think we need to transpose... because we are in [column][row] order
+    // unsigned char imageBytes[height][width][BYTES_PER_PIXEL];
+    // // unsigned char* imageBytes = new unsigned char[height * width * BYTES_PER_PIXEL];
+    // int colorByte;
+    // std::cout << height << " " << width << std::endl;
+    // // double foo = 1 / 
+    // for (int i = 0; i < height; i++) {
+    //     // std::cout << i << std::endl;
+    //     for (int j = 0; i < width; j++) {
+            
+    //         // std::cout << results[i][j] << std::endl;
+
+    //         if (results[j][i] <= maxOfMins) {
+    //             colorByte = 255;
+    //         } else if (results[j][i] >= maxOfMaxs) {
+    //             colorByte = 0;
+    //         } else {
+    //             // std::cout << results[i][j] << std::endl;
+    //             // colorByte = 255 - (((results[i][j] + maxOfMins) / 256));
+    //             colorByte = (unsigned char)round( 255 * (results[j][i] - maxOfMins) / (maxOfMaxs - maxOfMins));
+    //         }
+
+    //         // if (colorByte < 0 || colorByte > 255) {
+    //         //     std::cout << "ERRORO" << colorByte << std::endl;
+    //         // }
+
+    //         // imageBytes[i][j][0] = colorByte;
+    //         // imageBytes[i][j][1] = colorByte;
+    //         // imageBytes[i][j][2] = colorByte;
+
+    //         for (int k = 0; k < BYTES_PER_PIXEL; k++) {
+    //             imageBytes[i][j][k] = colorByte;
+    //         }
+    //     }
+    // }
+    // delete[] imageBytes;
 }
 
 int main(int argc, char const *argv[])
 {
-    int fft_size = 8192;
+    int fft_size = 256;
 
     // the max size we can have for a file (on my 3080) is: 384307168202282325 samples (real)
 
     // TODO we will need to add more arguments (fftsize, etc.)
-    std::string filename = argc == 2 ? argv[2] : "../../sermon.wav"; // TODO args!
+    std::string filename = argc == 2 ? argv[2] : "../../testing123-mono.wav"; // TODO args!
 
     // TODO would it make more sense for me to pass around an instance of the source instead of just the filename
 
@@ -138,7 +253,7 @@ int main(int argc, char const *argv[])
     std::cout << "Successfuly loaded!" << std::endl;
     // cudaEvent_t fftwStart = get_time();
     std::chrono::steady_clock::time_point fftwBegin = std::chrono::steady_clock::now();
-    p.performFFT();
+    auto results = p.performFFT();
     // cudaEvent_t fftwEnd = get_time();
     std::chrono::steady_clock::time_point fftwEnd = std::chrono::steady_clock::now();
     std::cout << "done cpu in: " << std::chrono::duration_cast<std::chrono::milliseconds>(fftwEnd - fftwBegin).count() << std::endl;
@@ -146,7 +261,7 @@ int main(int argc, char const *argv[])
     CUFFTPerformer p2(fft_size, filename);
     std::cout << "Beginning the gpu one..." << std::endl;
     cudaEvent_t cufftStart = get_time();
-    p2.performFFT();
+    auto results2 = p2.performFFT();
     cudaEvent_t cufftEnd = get_time();
     std::cout << "done gpu in: " << get_delta(cufftStart, cufftEnd) << std::endl;
 
@@ -167,10 +282,35 @@ int main(int argc, char const *argv[])
     // then, reduce on those to get the aboslue max and min, using those values to get the rgb range
 
     // todo it looks like the actual approach is to take the max of both mins and maxs
-    // thrust::host
-    thrust::host_vector<double> maxs;
-    // thrust::transform()
+    // outputResultsToFile(results);
+    // std::cout << "here" << std::endl;
+    // thrust::host_vector<double> maxs(results.size());
+    // thrust::transform(results.begin(), results.end(), maxs.begin(), [=] (thrust::host_vector<double> column) {
+    //     return *thrust::max_element(column.begin(), column.end());
+    // });
+    // std::cout << "maxs done" << std::endl;
+    // thrust::host_vector<double> mins(results.size());
+    // thrust::transform(results.begin(), results.end(), mins.begin(), [=] (thrust::host_vector<double> column) {
+    //     return *thrust::min_element(column.begin(), column.end());
+    // });
 
+    // double maxOfMaxs = *thrust::max_element(maxs.begin(), maxs.end());
+    // double maxOfMins = *thrust::max_element(mins.begin(), mins.end());
+
+    // size_t height = results[0].size();
+    // size_t width = results.size();
+
+    // std::cout << "after transposes" << std::endl;
+
+    // // double 
+
+    // std::cout << maxOfMins << "->" << maxOfMaxs << std::endl;
+
+    // outputResultsToFile(results, maxOfMins, maxOfMaxs);
+
+    outputResultsToFile(results2);
+
+    std::cout << "done?" << std::endl;
 
     return EXIT_SUCCESS;
 }
