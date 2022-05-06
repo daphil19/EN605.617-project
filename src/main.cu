@@ -106,16 +106,11 @@ void generateBitmapImage (unsigned char* image, int height, int width, char* ima
     fclose(imageFile);
 }
 
-
-// segfault :( :( :(
-
-void outputResultsToFile(thrust::host_vector<thrust::host_vector<double> > const& results) {
-    std::cout << "here" << std::endl;
+void outputResultsToFile(thrust::host_vector<thrust::host_vector<double> > const& results, char* outfile) {
     thrust::host_vector<double> maxs(results.size());
     thrust::transform(results.begin(), results.end(), maxs.begin(), [=] (thrust::host_vector<double> column) {
         return *thrust::max_element(column.begin(), column.end());
     });
-    std::cout << "maxs done" << std::endl;
     thrust::host_vector<double> mins(results.size());
     thrust::transform(results.begin(), results.end(), mins.begin(), [=] (thrust::host_vector<double> column) {
         return *thrust::min_element(column.begin(), column.end());
@@ -127,18 +122,6 @@ void outputResultsToFile(thrust::host_vector<thrust::host_vector<double> > const
     size_t height = results[0].size();
     size_t width = results.size();
 
-    std::cout << "after transposes" << std::endl;
-
-    // double 
-
-    std::cout << maxOfMins << "->" << maxOfMaxs << std::endl;
-
-// int pixel_value = (int)round( 255 * (power_in_db[i] - min_db) / (max_db - min_db) );
-// if (pixel_value < 0) { pixel_value = 0; }
-// if (pixel_value > 255) { pixel_value = 255; }
-
-    // thrust::host_vector<int> indices(results.size());
-    // thrust::sequence(indices.begin(), indices.end());
     thrust::host_vector<thrust::host_vector<unsigned char> >bytes(results.size(), thrust::host_vector<unsigned char>(results[0].size()));
 
     for (int i = 0; i < results.size(); i++) {
@@ -153,16 +136,6 @@ void outputResultsToFile(thrust::host_vector<thrust::host_vector<double> > const
         });        
     }
 
-    std::cout << "here?" << std::endl;
-
-    // for (int i = 0; i < bytes.size(); i++) {
-    //     for (int j = 0; j < bytes[i].size(); j++){ 
-    //         std::cout << bytes[i][j] << " ";
-    //     }
-    //     std::cout << std::endl;
-    // }
-
-    // this breaks :(
     unsigned char imageBytes[height][width][BYTES_PER_PIXEL];
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {
@@ -172,65 +145,22 @@ void outputResultsToFile(thrust::host_vector<thrust::host_vector<double> > const
         }
     }
 
-    std::cout << "here!" << std::endl;
+    generateBitmapImage((unsigned char*) imageBytes, height, width, outfile);
 
-    generateBitmapImage((unsigned char*) imageBytes, height, width, "../../foo3.bmp");
+}
 
-    // thrust::transform(indices.begin(), indices.end(), bytes.begin(), [=] (int i) {
-    //     thrust::transform(results[i].begin(), results[i].end(), bytes[i].begin(), [=] (double res) {
-    //         if (res <= maxOfMins) {
-    //             return (unsigned char)255;
-    //         } else if (res >= maxOfMaxs) {
-    //             return (unsigned char)0;
-    //         } else {
-    //             return (unsigned char)round( 255 * (res - maxOfMins) / (maxOfMaxs - maxOfMins));
-    //         }
-    //     });
-    //     return bytes[i];
-    // });
+void verifySpectrogramOutputs() {
+    int fft_size = 256;
+    
+    auto filename = "../../testing123-mono.wav";
+    // TODO consider just passing in a reference to the source?
+    FFTWPerformer fftw(fft_size, filename);
+    auto fftwResults = fftw.performFFT();
+    outputResultsToFile(fftwResults, (char*)"../../fftw-results.bmp");
 
-    // is a nested transform faster?
-    // thrust::transform(results.begin(), results.end(), bytes.begin(), [=] (thrust::host_vector<double> column) {
-
-    // });
-
-
-    // TODO I think we need to transpose... because we are in [column][row] order
-    // unsigned char imageBytes[height][width][BYTES_PER_PIXEL];
-    // // unsigned char* imageBytes = new unsigned char[height * width * BYTES_PER_PIXEL];
-    // int colorByte;
-    // std::cout << height << " " << width << std::endl;
-    // // double foo = 1 / 
-    // for (int i = 0; i < height; i++) {
-    //     // std::cout << i << std::endl;
-    //     for (int j = 0; i < width; j++) {
-            
-    //         // std::cout << results[i][j] << std::endl;
-
-    //         if (results[j][i] <= maxOfMins) {
-    //             colorByte = 255;
-    //         } else if (results[j][i] >= maxOfMaxs) {
-    //             colorByte = 0;
-    //         } else {
-    //             // std::cout << results[i][j] << std::endl;
-    //             // colorByte = 255 - (((results[i][j] + maxOfMins) / 256));
-    //             colorByte = (unsigned char)round( 255 * (results[j][i] - maxOfMins) / (maxOfMaxs - maxOfMins));
-    //         }
-
-    //         // if (colorByte < 0 || colorByte > 255) {
-    //         //     std::cout << "ERRORO" << colorByte << std::endl;
-    //         // }
-
-    //         // imageBytes[i][j][0] = colorByte;
-    //         // imageBytes[i][j][1] = colorByte;
-    //         // imageBytes[i][j][2] = colorByte;
-
-    //         for (int k = 0; k < BYTES_PER_PIXEL; k++) {
-    //             imageBytes[i][j][k] = colorByte;
-    //         }
-    //     }
-    // }
-    // delete[] imageBytes;
+    CUFFTPerformer cufft(fft_size, filename);
+    auto cufftResults = cufft.performFFT();
+    outputResultsToFile(fftwResults, (char*)"../../cufft-results.bmp");
 }
 
 int main(int argc, char const *argv[])
@@ -240,7 +170,11 @@ int main(int argc, char const *argv[])
     // the max size we can have for a file (on my 3080) is: 384307168202282325 samples (real)
 
     // TODO we will need to add more arguments (fftsize, etc.)
-    std::string filename = argc == 2 ? argv[2] : "../../testing123-mono.wav"; // TODO args!
+    // std::string filename = argc == 2 ? argv[2] : "../../testing123-mono.wav"; // TODO args!
+
+    std::string filename = "../../testing123-mono.wav";
+
+    bool verify = argc == 2 && argv[1] == "--verify";
 
     // TODO would it make more sense for me to pass around an instance of the source instead of just the filename
 
@@ -248,70 +182,37 @@ int main(int argc, char const *argv[])
     fftw_init_threads();
     fftw_plan_with_nthreads(std::thread::hardware_concurrency());
 
-    std::cout << "Attempting to load WAV file " << filename << "... this may take a while" << std::endl;
-    FFTWPerformer p(fft_size, filename);
-    std::cout << "Successfuly loaded!" << std::endl;
-    // cudaEvent_t fftwStart = get_time();
-    std::chrono::steady_clock::time_point fftwBegin = std::chrono::steady_clock::now();
-    auto results = p.performFFT();
-    // cudaEvent_t fftwEnd = get_time();
-    std::chrono::steady_clock::time_point fftwEnd = std::chrono::steady_clock::now();
-    std::cout << "done cpu in: " << std::chrono::duration_cast<std::chrono::milliseconds>(fftwEnd - fftwBegin).count() << std::endl;
+    if (verify) {
+        std::cout << "Running spectrogram verification code paths." << std::endl;
+        verifySpectrogramOutputs();
+    } else {
+        std::cout << "Performing benchmark" << std::endl;
+    }
 
-    CUFFTPerformer p2(fft_size, filename);
-    std::cout << "Beginning the gpu one..." << std::endl;
-    cudaEvent_t cufftStart = get_time();
-    auto results2 = p2.performFFT();
-    cudaEvent_t cufftEnd = get_time();
-    std::cout << "done gpu in: " << get_delta(cufftStart, cufftEnd) << std::endl;
+    // std::cout << "Attempting to load WAV file " << filename << "... this may take a while" << std::endl;
+    // FFTWPerformer p(fft_size, filename);
+    // std::cout << "Successfuly loaded!" << std::endl;
+    // // cudaEvent_t fftwStart = get_time();
+    // std::chrono::steady_clock::time_point fftwBegin = std::chrono::steady_clock::now();
+    // auto results = p.performFFT();
+    // // cudaEvent_t fftwEnd = get_time();
+    // std::chrono::steady_clock::time_point fftwEnd = std::chrono::steady_clock::now();
+    // std::cout << "done cpu in: " << std::chrono::duration_cast<std::chrono::milliseconds>(fftwEnd - fftwBegin).count() << std::endl;
 
-    std::cout << "Done!" << std::endl;
+    // CUFFTPerformer p2(fft_size, filename);
+    // std::cout << "Beginning the gpu one..." << std::endl;
+    // cudaEvent_t cufftStart = get_time();
+    // auto results2 = p2.performFFT();
+    // cudaEvent_t cufftEnd = get_time();
+    // std::cout << "done gpu in: " << get_delta(cufftStart, cufftEnd) << std::endl;
+
+    // std::cout << "Done!" << std::endl;
 
     fftw_cleanup();
     fftw_cleanup_threads();
 
-    // TODO we need to do image writeback, but how do we figure out the scaling?
-    // input is 0 -> 1, so does that mean we end up with a 0 - 1 output? how do we do it at work?
-    // for the image, we need to transpose the vector into a flat array, and then invoke the write function
-    // for RGB, all we need to do is normalize the results over 0,255 (but how do we do that???)
-    // for ^, I think we actually take the min/max of what we have and go with that
-    // this code isn't particularly optimal, as it's not part of the evaluated code path
 
-    // TODO get the minMax of the inner vectors using thrust's fany function
-    // take each and put them in their own vectors
-    // then, reduce on those to get the aboslue max and min, using those values to get the rgb range
-
-    // todo it looks like the actual approach is to take the max of both mins and maxs
-    // outputResultsToFile(results);
-    // std::cout << "here" << std::endl;
-    // thrust::host_vector<double> maxs(results.size());
-    // thrust::transform(results.begin(), results.end(), maxs.begin(), [=] (thrust::host_vector<double> column) {
-    //     return *thrust::max_element(column.begin(), column.end());
-    // });
-    // std::cout << "maxs done" << std::endl;
-    // thrust::host_vector<double> mins(results.size());
-    // thrust::transform(results.begin(), results.end(), mins.begin(), [=] (thrust::host_vector<double> column) {
-    //     return *thrust::min_element(column.begin(), column.end());
-    // });
-
-    // double maxOfMaxs = *thrust::max_element(maxs.begin(), maxs.end());
-    // double maxOfMins = *thrust::max_element(mins.begin(), mins.end());
-
-    // size_t height = results[0].size();
-    // size_t width = results.size();
-
-    // std::cout << "after transposes" << std::endl;
-
-    // // double 
-
-    // std::cout << maxOfMins << "->" << maxOfMaxs << std::endl;
-
-    // outputResultsToFile(results, maxOfMins, maxOfMaxs);
-
-    outputResultsToFile(results2);
-
-    std::cout << "done?" << std::endl;
-
+    // outputResultsToFile(results2);
     return EXIT_SUCCESS;
 }
 
