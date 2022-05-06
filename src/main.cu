@@ -161,11 +161,18 @@ void verifySpectrogramOutputs() {
     CUFFTPerformer cufft(fft_size, filename);
     auto cufftResults = cufft.performFFT();
     outputResultsToFile(fftwResults, (char*)"../../cufft-results.bmp");
+<<<<<<< Updated upstream
+=======
+}
+
+void performBenchmark() {
+    // fft sizes should range from 256 to... something? maybe 2^20?
+>>>>>>> Stashed changes
 }
 
 int main(int argc, char const *argv[])
 {
-    int fft_size = 256;
+    // int fft_size = 256;
 
     // the max size we can have for a file (on my 3080) is: 384307168202282325 samples (real)
 
