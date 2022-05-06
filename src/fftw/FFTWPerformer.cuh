@@ -49,7 +49,7 @@ private:
     void normalize();
 public:
     // TODO do we want an alternate constructor that provides start/end for the spectrogram?
-    FFTWPerformer(int fft_size, const std::string file);
+    FFTWPerformer(int fft_size, AudioFile<double> &source);
     ~FFTWPerformer();
 
     // void performFFT();

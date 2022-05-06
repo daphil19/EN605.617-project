@@ -35,7 +35,7 @@ private:
     cufftHandle plan;
 
 public:
-    CUFFTPerformer(int fft_size, const std::string file);
+    CUFFTPerformer(int fft_size, AudioFile<double> &source);
     ~CUFFTPerformer();
 
     thrust::host_vector<thrust::host_vector<double> > performFFT();

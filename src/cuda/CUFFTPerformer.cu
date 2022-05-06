@@ -30,11 +30,12 @@ __global__ void post_fft_transform(cufftDoubleComplex* data, double* output) {
     output[idx] = isfinite(logScale) ? logScale : MIN_REPLACEMENT;
 }
 
-CUFFTPerformer::CUFFTPerformer(int fft_size, const std::string file)
+CUFFTPerformer::CUFFTPerformer(int fft_size, AudioFile<double> &source)
 {
     this->fft_size = fft_size;
 
-    source = AudioFile<double>(file);
+    // source = AudioFile<double>(file);
+    this->source = source;
 
     window = hann<thrust::device_vector<double> >(fft_size);
 
