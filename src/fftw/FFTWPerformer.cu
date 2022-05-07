@@ -15,7 +15,6 @@
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/execution_policy.h>
 
-#include "../io/SampleSource.h"
 #include "../hann.cuh"
 #include "CPUSamples.cuh"
 
@@ -69,7 +68,6 @@ void FFTWPerformer::normalize() {
 thrust::host_vector<thrust::host_vector<double> > FFTWPerformer::performFFT() {
 
 
-    std::cout << "fftw performer will use up to " << fftw_planner_nthreads() << " threads" << std::endl;
 
     // TODO is it a window and then an fft, or an fft and then a window?
 
@@ -89,11 +87,9 @@ thrust::host_vector<thrust::host_vector<double> > FFTWPerformer::performFFT() {
 
     // in this structure, the outer index is the column of the image, and the inner index is the row
     // this allows for fft outputs to be bulk copied via memcpy as opposed to iterated over
-    // hopefully, we don't need to transpose to get things to work later on
 
-    // TODO WE SHOULD IMPROVE WHAT THE OUTPUT STRUCTURE IS!
-    // TODO do we want to convert this to an array? or maybe have it be a thrust vector??
-    // std::unique_ptr<std::unique_ptr<double[]>[]> output(new std::unique_ptr<double[]>[num_cols]);
+
+    // TODO we should add the ability to configure start and end samples
 
     // TODO will making these references make things faster?
     thrust::host_vector<thrust::host_vector<double> >output(num_cols);
@@ -109,20 +105,12 @@ thrust::host_vector<thrust::host_vector<double> > FFTWPerformer::performFFT() {
         // clear the input buffer in the event we don't have enough data to fill the buffer
         in_buffer->clear();
 
-        // TODO next, we need to load data into the buffer
-
-        // TODO is there a better way for this to be done?
         // these numbers are in samples!
         auto start = fft_size / 2 * i;
         auto end = std::min(start + fft_size, num_samples);
 
         // now we _actually_ load the samples
-        // source.samples
         in_buffer->load(source.samples, start, end);
-
-        // in_buffer->normalize(source.getBitDepth());
-
-        // TODO WE NEED TO DO THINKS LIKE NORMALIZE!
 
         // window
         in_buffer->applyWindow(window);
@@ -130,16 +118,7 @@ thrust::host_vector<thrust::host_vector<double> > FFTWPerformer::performFFT() {
         // execute
         fftw_execute(plan);
 
-        // next, we take the magnitude
-        // can we get away with shifting to make this faster?
-
-        // write data back to output 
-        // TODO how are we supposed to get back to a single data type? is that by taking the magnitude?
-
-        // if (!complex) {
-        //     out_buffer[0][0] = 0;
-        //     out_buffer[0][1] = 0;
-        // }
+        // next, we take the magnitude (squared)
 
         // casting to complex array helps with normalization
         auto out_buf_cast = reinterpret_cast<std::complex<double> *>(out_buffer);
@@ -188,25 +167,9 @@ thrust::host_vector<thrust::host_vector<double> > FFTWPerformer::performFFT() {
         // });
         
 
-
         // put the results in the output
         output[i] = cur_col;
-        // for (int j = 0; j < output_fft_size; j++) {
-        //     std::cout << cur_col[j] << " ";
-        // }
-        // std::cout << "\\" << std::endl;
-
     }
-
-    /*
-        NOTE I think this is the intended order:
-        get samples
-        normalize
-        window
-        fft
-        results go into pixel
-        slide by ...?
-     */
 
     return output;
 }

@@ -16,6 +16,8 @@
 #include <chrono>
 #include <thread>
 
+const int NUM_ITERATIONS = 10;
+
 // adapted from https://stackoverflow.com/a/47785639
 const int BYTES_PER_PIXEL = 3; /// red, green, & blue
 const int FILE_HEADER_SIZE = 14;
@@ -151,9 +153,7 @@ void verifySpectrogramOutputs()
 {
     int fft_size = 256;
 
-    // auto filename = "../../testing123-mono.wav";
     AudioFile<double> source("../../testing123-mono.wav");
-    // TODO consider just passing in a reference to the source?
     FFTWPerformer fftw(fft_size, source);
     auto fftwResults = fftw.performFFT();
     outputResultsToFile(fftwResults, (char *)"../../fftw-results.bmp");
@@ -163,29 +163,52 @@ void verifySpectrogramOutputs()
     outputResultsToFile(fftwResults, (char *)"../../cufft-results.bmp");
 }
 
+// TODO how do we want to address real vs complex? and other related things?
+// also, how do we want to address the amounts of data?
 void performBenchmark()
 {
+    // TODO we should probably make these 2d so that we can handle all of the results
     AudioFile<double> source("../../sermon.wav");
+    thrust::host_vector<double> fftw_results;
+    thrust::host_vector<double> cufft_results;
     for (int i = 8; i <= 20; i++) {
         int fft_size = pow(2, i);
         std::cout << "using fft size " << fft_size << std::endl;
-        FFTWPerformer p(fft_size, source);
-        std::cout << "Successfuly loaded!" << std::endl;
-        std::chrono::steady_clock::time_point fftwBegin = std::chrono::steady_clock::now();
-        auto results = p.performFFT();
-        std::chrono::steady_clock::time_point fftwEnd = std::chrono::steady_clock::now();
-        std::cout << "done cpu in: " << std::chrono::duration_cast<std::chrono::milliseconds>(fftwEnd - fftwBegin).count() << std::endl;
+        thrust::host_vector<double> fftw_times;
+        thrust::host_vector<double> cufft_times;
+        for (int j = 0; j < NUM_ITERATIONS; j++) {
+            std::cout << "iteration " << j + 1 << " of " << NUM_ITERATIONS << std::endl;
+            FFTWPerformer p(fft_size, source);
+            // std::cout << "Successfuly loaded!" << std::endl;
+            std::chrono::steady_clock::time_point fftwBegin = std::chrono::steady_clock::now();
+            std::cout << "performing cpu" << std::endl;
+            auto results = p.performFFT();
+            std::chrono::steady_clock::time_point fftwEnd = std::chrono::steady_clock::now();
+            // std::cout << "done cpu in: " << std::chrono::duration_cast<std::chrono::milliseconds>(fftwEnd - fftwBegin).count() << std::endl;
+            fftw_times.push_back(std::chrono::duration_cast<std::chrono::milliseconds>(fftwEnd - fftwBegin).count());
 
-        CUFFTPerformer p2(fft_size, source);
-        std::cout << "Beginning the gpu one..." << std::endl;
-        cudaEvent_t cufftStart = get_time();
-        auto results2 = p2.performFFT();
-        cudaEvent_t cufftEnd = get_time();
-        std::cout << "done gpu in: " << get_delta(cufftStart, cufftEnd) << std::endl;
+            CUFFTPerformer p2(fft_size, source);
+            // std::cout << "Beginning the gpu one..." << std::endl;
+            cudaEvent_t cufftStart = get_time();
+            std::cout << "performing gpu" << std::endl;
+            auto results2 = p2.performFFT();
+            cudaEvent_t cufftEnd = get_time();
+            // std::cout << "done gpu in: " << get_delta(cufftStart, cufftEnd) << std::endl;
+            cufft_times.push_back(get_delta(cufftStart, cufftEnd));
+        }
+
+        int fftw_sum = thrust::reduce(fftw_times.begin(), fftw_times.end());
+        int cufft_sum = thrust::reduce(cufft_times.begin(), cufft_times.end());
+        fftw_results.push_back(fftw_sum / NUM_ITERATIONS);
+        cufft_results.push_back(cufft_sum / NUM_ITERATIONS);
+
     }
-    // fft sizes should range from 256 to... something? maybe 2^20?
-    // int fft_size = 8192;
 
+    std::cout << "fft size | fftw time | cufft time" << std::endl;
+    for (int i = 0; i < fftw_results.size(); i++) {
+        std::cout << pow(2, 8 + i) << " " << fftw_results[i] << " " << cufft_results[i] << std::endl;
+
+    }
 }
 
 int main(int argc, char const *argv[])
@@ -194,6 +217,8 @@ int main(int argc, char const *argv[])
 
     fftw_init_threads();
     fftw_plan_with_nthreads(std::thread::hardware_concurrency());
+
+    std::cout << "fftw performer will use up to " << fftw_planner_nthreads() << " threads" << std::endl;
 
     if (verify)
     {
@@ -212,3 +237,21 @@ int main(int argc, char const *argv[])
     std::cout << "Done!" << std::endl;
     return EXIT_SUCCESS;
 }
+
+/*
+naive results on full (complex?) file on WSL
+fft size | fftw time | cufft time
+256 235121 401458
+512 122705 154157
+1024 64262 78188
+2048 35563 32075
+4096 21396 15004
+8192 14127 11336
+16384 10072 6671
+32768 8200 4808
+65536 7487 4231
+131072 7235 3220
+262144 7387 3464
+524288 7515 3128
+1.04858e+06 8355 2961
+*/

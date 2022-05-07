@@ -38,7 +38,7 @@ thrust_create_target(Thrust)
 
 add_subdirectory(fftw)
 add_subdirectory(cuda)
-add_subdirectory(io)
+# add_subdirectory(io)
 
 add_executable(en605.617-project main.cu cuda_utilities.cu)
 

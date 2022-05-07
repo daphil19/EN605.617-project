@@ -98,18 +98,3 @@ void CPUSamples::applyWindow(thrust::host_vector<double> window) {
         }
     }
 }
-
-void CPUSamples::normalize(int bitsPerSample) {
-    double step = 1.0 / pow(2, bitsPerSample);
-    int offset = pow(2, bitsPerSample - 1) + 1; // intervals are usually [-2^(n - 1) - 1, 2^(n - 1)] for data types
-    
-    for (int i = 0; i < size; i++) {
-        if (complex) {
-            samples.complex[i][0] = (samples.complex[i][0] + offset) * step;
-            samples.complex[i][1] = (samples.complex[i][1] + offset) * step;
-        } else {
-            samples.real[i] = (samples.real[i] + offset) * step;
-        }
-    }
-    // if (complex)
-}
