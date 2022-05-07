@@ -155,11 +155,11 @@ void verifySpectrogramOutputs()
 
     AudioFile<double> source("../../testing123-mono.wav");
     FFTWPerformer fftw(fft_size, source);
-    auto fftwResults = fftw.performFFT();
+    auto fftwResults = fftw.performFFT(0, source.getNumSamplesPerChannel());
     outputResultsToFile(fftwResults, (char *)"../../fftw-results.bmp");
 
     CUFFTPerformer cufft(fft_size, source);
-    auto cufftResults = cufft.performFFT();
+    auto cufftResults = cufft.performFFT(0, source.getNumSamplesPerChannel());
     outputResultsToFile(fftwResults, (char *)"../../cufft-results.bmp");
 }
 
@@ -182,7 +182,7 @@ void performBenchmark()
             // std::cout << "Successfuly loaded!" << std::endl;
             std::chrono::steady_clock::time_point fftwBegin = std::chrono::steady_clock::now();
             std::cout << "performing cpu" << std::endl;
-            auto results = p.performFFT();
+            auto results = p.performFFT(0, source.getNumSamplesPerChannel());
             std::chrono::steady_clock::time_point fftwEnd = std::chrono::steady_clock::now();
             // std::cout << "done cpu in: " << std::chrono::duration_cast<std::chrono::milliseconds>(fftwEnd - fftwBegin).count() << std::endl;
             fftw_times.push_back(std::chrono::duration_cast<std::chrono::milliseconds>(fftwEnd - fftwBegin).count());
@@ -191,7 +191,7 @@ void performBenchmark()
             // std::cout << "Beginning the gpu one..." << std::endl;
             cudaEvent_t cufftStart = get_time();
             std::cout << "performing gpu" << std::endl;
-            auto results2 = p2.performFFT();
+            auto results2 = p2.performFFT(0, source.getNumSamplesPerChannel());
             cudaEvent_t cufftEnd = get_time();
             // std::cout << "done gpu in: " << get_delta(cufftStart, cufftEnd) << std::endl;
             cufft_times.push_back(get_delta(cufftStart, cufftEnd));

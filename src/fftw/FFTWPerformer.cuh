@@ -53,7 +53,7 @@ public:
     ~FFTWPerformer();
 
     // void performFFT();
-    thrust::host_vector<thrust::host_vector<double> > performFFT();
+    thrust::host_vector<thrust::host_vector<double> > performFFT(int startSample, int stopSample);
     
 };
 

@@ -65,7 +65,7 @@ void FFTWPerformer::normalize() {
     
 }
 
-thrust::host_vector<thrust::host_vector<double> > FFTWPerformer::performFFT() {
+thrust::host_vector<thrust::host_vector<double> > FFTWPerformer::performFFT(int startSample, int stopSample) {
 
 
 
@@ -75,7 +75,8 @@ thrust::host_vector<thrust::host_vector<double> > FFTWPerformer::performFFT() {
     // for every fftsize, we will step fftsize / 2
     // we repeat this until we have an fftsize that contains the end of the file
 
-    auto num_samples = source.getNumSamplesPerChannel();
+    // TODO we are assuming that the start and stop samples passed in are valid values based on the source
+    int num_samples = stopSample - startSample;
 
 
     // the number of colums in the output
@@ -106,7 +107,7 @@ thrust::host_vector<thrust::host_vector<double> > FFTWPerformer::performFFT() {
         in_buffer->clear();
 
         // these numbers are in samples!
-        auto start = fft_size / 2 * i;
+        auto start = startSample + fft_size / 2 * i;
         auto end = std::min(start + fft_size, num_samples);
 
         // now we _actually_ load the samples

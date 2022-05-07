@@ -59,8 +59,8 @@ CUFFTPerformer::~CUFFTPerformer()
     delete in_buffer;
 }
 
-thrust::host_vector<thrust::host_vector<double> > CUFFTPerformer::performFFT() {
-    auto num_samples = source.getNumSamplesPerChannel();
+thrust::host_vector<thrust::host_vector<double> > CUFFTPerformer::performFFT(int startSample, int stopSample) {
+    auto num_samples = stopSample - startSample;
 
     // this results in 50% overlap
     int num_cols = num_samples / (fft_size / 2);
@@ -76,7 +76,7 @@ thrust::host_vector<thrust::host_vector<double> > CUFFTPerformer::performFFT() {
                 in_buffer->clear();
 
         // these numbers are in samples!
-        auto start = fft_size / 2 * i;
+        auto start = startSample + fft_size / 2 * i;
         auto end = std::min(start + fft_size, num_samples);
 
 

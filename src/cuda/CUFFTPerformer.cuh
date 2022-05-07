@@ -38,7 +38,7 @@ public:
     CUFFTPerformer(int fft_size, AudioFile<double> &source);
     ~CUFFTPerformer();
 
-    thrust::host_vector<thrust::host_vector<double> > performFFT();
+    thrust::host_vector<thrust::host_vector<double> > performFFT(int startSample, int stopSample);
 };
 
 
