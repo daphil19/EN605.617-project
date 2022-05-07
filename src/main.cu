@@ -17,6 +17,8 @@
 #include <thread>
 
 const int NUM_ITERATIONS = 10;
+const int MIN_FFT_POWER = 8;
+const int MAX_FFT_POWER = 20;
 
 // adapted from https://stackoverflow.com/a/47785639
 const int BYTES_PER_PIXEL = 3; /// red, green, & blue
@@ -165,50 +167,68 @@ void verifySpectrogramOutputs()
 
 // TODO how do we want to address real vs complex? and other related things?
 // also, how do we want to address the amounts of data?
-void performBenchmark()
+// TODO only pass in a single array!
+void performBenchmark(std::string filename, std::vector<int> const &sampleCounts, thrust::host_vector<thrust::host_vector<double> > &results)
 {
     // TODO we should probably make these 2d so that we can handle all of the results
-    AudioFile<double> source("../../sermon.wav");
-    thrust::host_vector<double> fftw_results;
-    thrust::host_vector<double> cufft_results;
-    for (int i = 8; i <= 20; i++) {
+    AudioFile<double> source(filename);
+    // thrust::host_vector<double> results;
+    // thrust::host_vector<double> cufft_results;
+    for (int i = MIN_FFT_POWER; i <= MAX_FFT_POWER; i++) {
         int fft_size = pow(2, i);
         std::cout << "using fft size " << fft_size << std::endl;
-        thrust::host_vector<double> fftw_times;
-        thrust::host_vector<double> cufft_times;
-        for (int j = 0; j < NUM_ITERATIONS; j++) {
-            std::cout << "iteration " << j + 1 << " of " << NUM_ITERATIONS << std::endl;
-            FFTWPerformer p(fft_size, source);
-            // std::cout << "Successfuly loaded!" << std::endl;
-            std::chrono::steady_clock::time_point fftwBegin = std::chrono::steady_clock::now();
-            std::cout << "performing cpu" << std::endl;
-            auto results = p.performFFT(0, source.getNumSamplesPerChannel());
-            std::chrono::steady_clock::time_point fftwEnd = std::chrono::steady_clock::now();
-            // std::cout << "done cpu in: " << std::chrono::duration_cast<std::chrono::milliseconds>(fftwEnd - fftwBegin).count() << std::endl;
-            fftw_times.push_back(std::chrono::duration_cast<std::chrono::milliseconds>(fftwEnd - fftwBegin).count());
+        for (int j = 0; j < sampleCounts.size(); j++) {
+            int stopSample = sampleCounts[j];
+            std::cout << "using sample count " << stopSample << std::endl;
+            thrust::host_vector<double> fftw_times;
+            thrust::host_vector<double> cufft_times;
+            for (int k = 0; k < NUM_ITERATIONS; k++) {
+                std::cout << "iteration " << k + 1 << " of " << NUM_ITERATIONS << std::endl;
+                FFTWPerformer p(fft_size, source);
+                // std::cout << "Successfuly loaded!" << std::endl;
+                std::chrono::steady_clock::time_point fftwBegin = std::chrono::steady_clock::now();
+                std::cout << "performing cpu" << std::endl;
+                auto results = p.performFFT(0, stopSample);
+                std::chrono::steady_clock::time_point fftwEnd = std::chrono::steady_clock::now();
+                // std::cout << "done cpu in: " << std::chrono::duration_cast<std::chrono::milliseconds>(fftwEnd - fftwBegin).count() << std::endl;
+                fftw_times.push_back(std::chrono::duration_cast<std::chrono::milliseconds>(fftwEnd - fftwBegin).count());
 
-            CUFFTPerformer p2(fft_size, source);
-            // std::cout << "Beginning the gpu one..." << std::endl;
-            cudaEvent_t cufftStart = get_time();
-            std::cout << "performing gpu" << std::endl;
-            auto results2 = p2.performFFT(0, source.getNumSamplesPerChannel());
-            cudaEvent_t cufftEnd = get_time();
-            // std::cout << "done gpu in: " << get_delta(cufftStart, cufftEnd) << std::endl;
-            cufft_times.push_back(get_delta(cufftStart, cufftEnd));
+                CUFFTPerformer p2(fft_size, source);
+                // std::cout << "Beginning the gpu one..." << std::endl;
+                cudaEvent_t cufftStart = get_time();
+                std::cout << "performing gpu" << std::endl;
+                auto results2 = p2.performFFT(0, stopSample);
+                cudaEvent_t cufftEnd = get_time();
+                // std::cout << "done gpu in: " << get_delta(cufftStart, cufftEnd) << std::endl;
+                cufft_times.push_back(get_delta(cufftStart, cufftEnd));
+            }
+
+            int fftw_sum = thrust::reduce(fftw_times.begin(), fftw_times.end());
+            int cufft_sum = thrust::reduce(cufft_times.begin(), cufft_times.end());
+
+            thrust::host_vector<double> fftw;
+            thrust::host_vector<double> cufft;
+            fftw.push_back(fft_size);
+            // cufft.push_back(fft_size);
+
+            fftw.push_back(stopSample);
+            // cufft.push_back(stopSample);
+
+            fftw.push_back(fftw_sum / NUM_ITERATIONS);
+            fftw.push_back(cufft_sum / NUM_ITERATIONS);
+
+            results.push_back(fftw);
+            // cufft_results.push_back(cufft);
+            // results.push_back(cufft);
+
         }
-
-        int fftw_sum = thrust::reduce(fftw_times.begin(), fftw_times.end());
-        int cufft_sum = thrust::reduce(cufft_times.begin(), cufft_times.end());
-        fftw_results.push_back(fftw_sum / NUM_ITERATIONS);
-        cufft_results.push_back(cufft_sum / NUM_ITERATIONS);
-
     }
 
-    std::cout << "fft size | fftw time | cufft time" << std::endl;
-    for (int i = 0; i < fftw_results.size(); i++) {
-        std::cout << pow(2, 8 + i) << " " << fftw_results[i] << " " << cufft_results[i] << std::endl;
+    // std::cout << "fft size | fftw time | cufft time" << std::endl;
+    // for (int i = 0; i < results.size(); i++) {
+    //     std::cout << pow(2, 8 + i) << " " << results[i] << " " << cufft_results[i] << std::endl;
 
-    }
+    // }
 }
 
 int main(int argc, char const *argv[])
@@ -227,8 +247,48 @@ int main(int argc, char const *argv[])
     }
     else
     {
+        int fullDataSize = AudioFile<double>("../../sermon.wav").getNumSamplesPerChannel();
+        std::vector sampleCounts{ 50000, 100000, 1000000, 10000000, fullDataSize };
+
         std::cout << "Performing benchmark" << std::endl;
-        performBenchmark();
+        thrust::host_vector<thrust::host_vector<double> > complex_results;
+        // thrust::host_vector<thrust::host_vector<double> > cufft_complex_results;
+        performBenchmark("../../sermon.wav", sampleCounts, complex_results);
+        std::cout << "fft size | data size | fftw time | cufft time" << std::endl;
+        // for (int i = 0; i < complex_results.size(); i++) {
+        //     auto resultRow = complex_results[i];
+        //     for (int j = 0; j < resultRow.size(); j++) {
+        //         std::cout << resultRow[j] << " ";
+        //     }
+        //     std::cout << std::endl;
+        // }
+        // for (int i = 0; i < fftw_results.size(); i++) {
+        //     std::cout << pow(2, 8 + i) << " " << fftw_results[i] << " " << cufft_results[i] << std::endl;
+
+        // }
+
+        thrust::host_vector<thrust::host_vector<double> > real_results;
+        // thrust::host_vector<thrust::host_vector<double> > cufft_real_results;
+        performBenchmark("../../sermon-mono.wav", sampleCounts, real_results);
+
+        std::cout << "COMPLEX RESULTS:" << std::endl;
+                for (int i = 0; i < complex_results.size(); i++) {
+            auto resultRow = complex_results[i];
+            for (int j = 0; j < resultRow.size(); j++) {
+                std::cout << resultRow[j] << " ";
+            }
+            std::cout << std::endl;
+        }
+
+        std::cout << "REAL RESULTS:" << std::endl;
+        for (int i = 0; i < real_results.size(); i++) {
+            auto resultRow = real_results[i];
+            for (int j = 0; j < resultRow.size(); j++) {
+                std::cout << resultRow[j] << " ";
+            }
+            std::cout << std::endl;
+        }
+
     }
 
     fftw_cleanup();
