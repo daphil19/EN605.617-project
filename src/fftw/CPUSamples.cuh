@@ -9,21 +9,21 @@
 class CPUSamples
 {
 private:
-    /* data */
     bool complex;
     int size;
-    union Samples{
-        double* real;
-        fftw_complex* complex;
+    union Samples
+    {
+        double *real;
+        fftw_complex *complex;
     } samples;
+
 public:
     CPUSamples(bool complex, int fft_size);
     ~CPUSamples();
     bool isComplex();
-    // NOTE this might not be needed
     CPUSamples::Samples getSamples();
-    double* getReal();
-    fftw_complex* getComplex();
+    double *getReal();
+    fftw_complex *getComplex();
     void clear();
 
     // start and end are expected to be within the bounds... too lazy to error check

@@ -14,8 +14,6 @@
 class CUFFTPerformer
 {
 private:
-    /* data */
-    // double* input;
     int fft_size;
 
     int output_fft_size;
@@ -28,9 +26,9 @@ private:
 
     AudioFile<double> source;
 
-    GPUSamples* in_buffer;
+    GPUSamples *in_buffer;
 
-    cufftDoubleComplex* out_buffer;
+    cufftDoubleComplex *out_buffer;
 
     cufftHandle plan;
 
@@ -38,8 +36,7 @@ public:
     CUFFTPerformer(int fft_size, AudioFile<double> &source);
     ~CUFFTPerformer();
 
-    thrust::host_vector<thrust::host_vector<double> > performSpectrogram(int startSample, int stopSample);
+    thrust::host_vector<thrust::host_vector<double>> performSpectrogram(int startSample, int stopSample);
 };
-
 
 #endif

@@ -32,18 +32,9 @@ FetchContent_MakeAvailable(audiofile thrust)
 find_package(Thrust REQUIRED CONFIG)
 thrust_create_target(Thrust)
 
-# set(OpenCV_DIR ${CMAKE_CURRENT_BINARY_DIR})
-# find_package(OpenCV REQUIRED)
-# include_directories(${OpenCV_INCLUDE_DIRS})
-
 add_subdirectory(fftw)
 add_subdirectory(cuda)
-# add_subdirectory(io)
 
 add_executable(en605.617-project main.cu cuda_utilities.cu)
 
 target_link_libraries(en605.617-project fftw_benchmark cuda_benchmark AudioFile)
-# TODO do we want to read the file in initially, and then just pass around the samples pointers for use?
-# or do we want data to be controlled in the performers?
-# the answer to that determines if we need this link here
-# target_link_libraries(en605.617-project opencv_imgproc)

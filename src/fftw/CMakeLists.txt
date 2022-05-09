@@ -10,13 +10,9 @@ ExternalProject_Add(
 # these "libraries" are really jsut consolidated targets for compilation, rather than intended to be standalone
 add_library(fftw_benchmark FFTWPerformer.cu CPUSamples.cu)
 
-# find_package(CUDA REQUIRED)
-# find_package(Thrust REQUIRED CONFIG)
-# find_package(Thrust REQUIRED CONFIG)
-# thrust_create_target(Thrust)
-
 # manually identify the fftw installation
 ExternalProject_Get_Property(fftw INSTALL_DIR)
+
 # the executable needs to know where to find libs to link
 target_link_directories(fftw_benchmark PUBLIC ${INSTALL_DIR}/lib)
 target_include_directories (fftw_benchmark PUBLIC ${INSTALL_DIR}/include)
