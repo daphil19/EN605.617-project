@@ -2,6 +2,9 @@
 
 My final project for EN605.617 - intro to GPU programming
 
+# **GIT LFS Dependency**
+**NOTE** this project uses [git LFS](https://git-lfs.github.com/) to manage data files. Make sure to have that installed before cloning!
+
 # Source structure
 
 ## `src`
@@ -49,4 +52,10 @@ To execute, run
 ```
 cd build/src
 ./en605.617-project
+```
+
+To run the verification target, run
+```
+cd build/src
+./en605.617-project --verify
 ```
