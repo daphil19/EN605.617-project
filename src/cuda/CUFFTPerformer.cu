@@ -34,7 +34,6 @@ CUFFTPerformer::CUFFTPerformer(int fft_size, AudioFile<double> &source)
 {
     this->fft_size = fft_size;
 
-    // source = AudioFile<double>(file);
     this->source = source;
 
     window = hann<thrust::device_vector<double> >(fft_size);
@@ -59,7 +58,7 @@ CUFFTPerformer::~CUFFTPerformer()
     delete in_buffer;
 }
 
-thrust::host_vector<thrust::host_vector<double> > CUFFTPerformer::performFFT(int startSample, int stopSample) {
+thrust::host_vector<thrust::host_vector<double> > CUFFTPerformer::performSpectrogram(int startSample, int stopSample) {
     auto num_samples = stopSample - startSample;
 
     // this results in 50% overlap
@@ -94,8 +93,6 @@ thrust::host_vector<thrust::host_vector<double> > CUFFTPerformer::performFFT(int
 
         // TODO can we optimize this size?
         post_fft_transform<<<1, output_fft_size>>>(out_buffer, thrust::raw_pointer_cast(col_result.data()));
-
-        // TODO i'm thinking of doing the remaining transformations in kernel space, and then copying a resulting device vector back out to the host vector
 
         auto cur_col = thrust::host_vector<double>(output_fft_size) = col_result;
         output[i] = cur_col;

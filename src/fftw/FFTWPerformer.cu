@@ -65,7 +65,7 @@ void FFTWPerformer::normalize() {
     
 }
 
-thrust::host_vector<thrust::host_vector<double> > FFTWPerformer::performFFT(int startSample, int stopSample) {
+thrust::host_vector<thrust::host_vector<double> > FFTWPerformer::performSpectrogram(int startSample, int stopSample) {
 
 
 
